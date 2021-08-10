@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.818" />
+
+    <LinearLayout
+        android:layout_width="392dp"
+        android:layout_height="781dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="0dp">
+
+        <Button
+            android:id="@+id/openModelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="OnOpenButtonClick"
+            android:text="Open Model" />
+
+        <Button
+            android:id="@+id/openDirectoryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="OnOpenDirectoryClick"
+            android:text="Open Directory" />
+
+        <Button
+            android:id="@+id/runInferenceButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="OnRunInferenceButtonClick"
+            android:text="Run Inference" />
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="183dp">
+
+            <RadioButton
+                android:id="@+id/NoneButton"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:checked="true"
+                android:text="None" />
+
+            <RadioButton
+                android:id="@+id/GPUFP32Button"
+                android:layout_width="match_parent"
+                android:layout_height="22dp"
+                android:text="GPUDelegate(FP32)" />
+
+            <RadioButton
+                android:id="@+id/GPUFP16Button"
+                android:layout_width="match_parent"
+                android:layout_height="21dp"
+                android:text="GPUDelegate(FP16)" />
+
+            <RadioButton
+                android:id="@+id/NNAPIFP32Button"
+                android:layout_width="match_parent"
+                android:layout_height="27dp"
+                android:text="NNAPI Delgate(FP32)" />
+
+            <RadioButton
+                android:id="@+id/NNAPIint8"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:text="NNAPI Delegate(int8)" />
+
+            <RadioButton
+                android:id="@+id/NNAPIFP16Button"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:text="NNAPI Delegate(FP16)" />
+
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/logtextbox"
+            android:layout_width="match_parent"
+            android:layout_height="219dp"
+            android:ems="10" />
+
+        <ProgressBar
+            android:id="@+id/progressBar3"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Switch
+            android:id="@+id/serverSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onServerSwitchButtonClick"
+            android:text="Server" />
+
+        <TextView
+            android:id="@+id/logTextBox2"
+            android:layout_width="match_parent"
+            android:layout_height="102dp"
+            android:text="TextView" />
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="192dp"
+            tools:srcCompat="@tools:sample/avatars" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
