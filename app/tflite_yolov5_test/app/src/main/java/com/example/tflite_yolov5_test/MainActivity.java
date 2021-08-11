@@ -50,10 +50,10 @@ import java.lang.Math;
 public class MainActivity extends AppCompatActivity {
     final int REQUEST_OPEN_FILE = 1;
     final int REQUEST_OPEN_DIRECTORY = 9999;
-    static {
+    /*static {
         System.loadLibrary("native-lib");
-    }
-    public native float[][] postprocess(float[][][][][] out1, float[][][][][] out2, float[][][][][] out3);
+    }*/
+    //public native float[][] postprocess(float[][][][][] out1, float[][][][][] out2, float[][][][][] out3);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -402,7 +402,7 @@ public class MainActivity extends AppCompatActivity {
                 addLog("postprocess for int8 is not implemented yet.");
                 return result;
             }
-            float[][] bboxes = postprocess(result.out1, result.out2, result.out3);
+            float[][] bboxes = new float[1][6];//postprocess(result.out1, result.out2, result.out3);
             String[] class_names = new String[]{"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
             for (int i = 0; i < bboxes.length; i++){
                 int x1 = (int) bboxes[i][0];

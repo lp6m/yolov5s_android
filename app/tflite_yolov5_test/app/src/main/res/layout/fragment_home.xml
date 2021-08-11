@@ -189,12 +189,11 @@
             android:text="Run inference" />
 
         <EditText
-            android:id="@+id/loglabel2"
+            android:id="@+id/oneLineLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:inputType="textPersonName"
-            android:text="Log" />
+            android:inputType="textPersonName" />
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -225,6 +224,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scrollbars="vertical"
+                android:inputType="textMultiLine"
                 android:text="TextView" />
         </ScrollView>
 

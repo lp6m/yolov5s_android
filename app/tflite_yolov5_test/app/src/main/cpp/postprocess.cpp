@@ -101,7 +101,7 @@ void detector(
     }
 }
 
-extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_MainActivity_postprocess (
+extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_TfliteRunner_postprocess (
         JNIEnv *env,
         jobject /* this */,
         jobjectArray input1,//80x80
