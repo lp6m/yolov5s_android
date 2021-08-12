@@ -1,4 +1,6 @@
 # yolov5s_android:rocket: 
+![app image](https://github.com/lp6m/yolov5s_android/raw/media/android_app.gif)
+
 The implementation of yolov5s on android for the [yolov5s export contest](https://github.com/ultralytics/yolov5/discussions/3213)  
 
 
