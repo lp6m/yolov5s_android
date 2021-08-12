@@ -32,12 +32,13 @@ If you use the other verion yolov5, you have to check the output layer IDs in ne
 ```sh
 netron yolov5s.onnx
 ```
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/onnx_model.png" width=50%>
+<img src="https://github.com/lp6m/yolov5s_android/raw/media/onnx_model.png" width=50%> 
+  
 In this model, the output layer IDs are `397, 458, 519`.  
 **We convert the ONNX model without detect head layers.**
 ### Why we exclude detect head layers?
 NNAPI does not support some layers included in detect head layers.  
-For example, The number of dimension supported by [`ANEURALNETWORKS_MUL`](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a) operator for multiply layer is up to 4.  
+For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a).   operator for multiply layer is up to 4.  
 The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.
 
 
@@ -61,10 +62,11 @@ Please refer this document: [6-7. Replace weights or constant values in Const OP
 If you convert the other version yolov5, the layer id to replace may be different. 
 How to find the replace id:
 1. Open `yolov5.xml` in netron and find 3 transpose layers, and remember the name of `custom` attribute of transpose layer. For example, `397/Cast_113007_const, 458/Cast_112979_const, 519/Cast_112993_const`.  
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_xml.png" width=50%>
+<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_xml.png" width=50%>  
+
 2. Open `yolov5.xml` in text editor and search the `custom` layer name obtained in the previous step, and remember the layer `id`. For example, `324, 365, 406`.  
 
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_in_editor.png" width=50%>
+<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_in_editor.png" width=50%>  
 
 3. Modify `layer_id` parameter in `convert_model/replace.json`.  
 
