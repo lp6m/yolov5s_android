@@ -89,7 +89,7 @@ You can load and evaluate json files in cocodt format.
 This is how to evaluate the inference results by Android app:  
 1. Install the app, and copy validation images like `val2017.zip` to the android device.
 1. Launch the app, open the home tab.
-1. Tap the `Open Directory` Button, and tap 'Run Inference' Button.
+1. Tap the `Open Directory` Button, and tap `Run Inference` Button.
 1. Inference results for each image is previewed to the app.
 1. After the inference process is completed, `result.json` file is saved to the selected image directory.
 1. Copy `results.json` from the android device, and run the following command.
