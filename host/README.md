@@ -13,7 +13,7 @@ optional arguments:
   --conf_thres CONF_THRES
   --iou_thres IOU_THRES
 ```
-Example:  
+### Example
 ```sh
 python3 detect.py --image dog.jpg
 bicycle [tensor(108.2864), tensor(134.7546), tensor(487.6782), tensor(595.6481)]
@@ -27,7 +27,8 @@ Results:
 ![result.jpg](https://github.com/lp6m/yolov5s_android/raw/media/host/result.jpg)
 
 ## Evaluate
-You can perform evaluation for COCO dataset by using pycocotools.  
+You can perform inference and evaluation for COCO dataset by using pycocotools.  
+The inference results are saved to `--output_json_path`.
 ```sh
 usage: evaluate.py [-h] [-m MODEL_PATH]
                    [--path_to_annotation PATH_TO_ANNOTATION]
@@ -57,7 +58,7 @@ optional arguments:
   --iou_thres IOU_THRES
 ```
 
-Example1:
+### Example1
 ```
 python3 evaluate.py --mode run  --output_json_path coco_5000.json
 Loading and preparing results...
@@ -83,8 +84,33 @@ DONE (t=1.64s).
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.424
 ```
   
-Example2:  
-You can load inference results from json file. When you evaluate the inference results from Android app, copy `results.json` from your android phone and run:
+### Example2
+You can load and evaluate json files in cocodt format.  
+This is how to evaluate the inference results by Android app:  
+1. Install the app, and copy validation images like `val2017.zip` to the android device.
+1. Launch the app, open the home tab.
+1. Tap the `Open Directory` Button, and tap 'Run Inference' Button.
+1. Inference results for each image is previewed to the app.
+1. After the inference process is completed, `result.json` file is saved to the selected image directory.
+1. Copy `results.json` from the android device, and run the following command.
 ```
-python3 evaluate.py --mode loadjson --load_json_path coco_5000.json
+python3 evaluate.py --mode loadjson --load_json_path result.json
 ```
+`results/android_result.json` in this repository is evaluated on the app at `NNAPI fp16` mode.  
+Results:
+```
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.285
+Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.422
+Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.311
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.144
+Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.336
+Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.363
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.244
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.344
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.348
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.171
+Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.401
+Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.458
+```
+
+
