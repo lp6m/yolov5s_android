@@ -11,7 +11,7 @@ The implementation of yolov5s on android for the [yolov5s export contest](https:
 ## Performance
 ### Latency (inference)
 These results are measured by [TFLite Model Benchmark Tool with C++ Binary](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/tools/benchmark#profiling-model-operators) on `Xiaomi Mi11`.  
-Please refer [`benchmark/benchmark.md`]((https://github.com/lp6m/yolov5s_android/tree/dev/benchmark) about the detail of benchmark command.  
+Please refer [`benchmark/benchmark.md`](https://github.com/lp6m/yolov5s_android/tree/dev/benchmark) about the detail of benchmark command.  
 The latency does not contain the pre/post processing time and data transfer time.  
 #### float32 model  
 
