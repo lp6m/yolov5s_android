@@ -61,35 +61,36 @@ void detector(
                     //don't apply sigmoid to all bbox candidates for efficiency
                     float obj_conf_unsigmoid = elmptr[4];
                     //if (sigmoid(obj_conf_unsigmoid) < conf_thresh) continue;
-                    if (obj_conf_unsigmoid < revsigmoid_conf) continue;
-                    //get maximum conf class
-                    float max_class_conf = elmptr[5];
-                    int max_class_idx = 0;
-                    for(int class_idx = 1; class_idx < CLASS_NUM; class_idx++){
-                        float class_conf = elmptr[class_idx + 5];
-                        if (class_conf > max_class_conf){
-                            max_class_conf = class_conf;
-                            max_class_idx = class_idx;
+                    if (obj_conf_unsigmoid >= revsigmoid_conf) {
+                        //get maximum conf class
+                        float max_class_conf = elmptr[5];
+                        int max_class_idx = 0;
+                        for(int class_idx = 1; class_idx < CLASS_NUM; class_idx++){
+                            float class_conf = elmptr[class_idx + 5];
+                            if (class_conf > max_class_conf){
+                                max_class_conf = class_conf;
+                                max_class_idx = class_idx;
+                            }
                         }
+                        // class conf filter
+                        float bbox_conf = sigmoid(max_class_conf) * sigmoid(obj_conf_unsigmoid);
+                        //if (bbox_conf < conf_thresh) continue;
+                        // xywh2xyxy
+                        // batched nms (by adding class * max_wh to coordinates,
+                        // we can get nms result for all classes by just one nms call)
+                        //grid[gridnum][gy][gx][0] = gx
+                        //grid[gridnum][gy][gx][1] = gy
+                        float cx = ((sigmoid(elmptr[0]) * 2.0f) - 0.5f + (float)gx) * (float)strides;
+                        float cy = ((sigmoid(elmptr[1]) * 2.0f) - 0.5f + (float)gy) * (float)strides;
+                        float w  = (sigmoid(elmptr[2]) * sigmoid(elmptr[2])) * 4.0f * (float)anchorgrid[ch][0];
+                        float h  = (sigmoid(elmptr[3]) * sigmoid(elmptr[3])) * 4.0f * (float)anchorgrid[ch][1];
+                        float x1 = cx - w / 2.0f + max_wh * max_class_idx;
+                        float y1 = cy - h / 2.0f + max_wh * max_class_idx;
+                        float x2 = cx + w / 2.0f + max_wh * max_class_idx;
+                        float y2 = cy + h / 2.0f + max_wh * max_class_idx;
+                        bbox box = bbox(x1, y1, x2, y2, bbox_conf, max_class_idx);
+                        bbox_candidates->push_back(box);
                     }
-                    // class conf filter
-                    float bbox_conf = sigmoid(max_class_conf) * sigmoid(obj_conf_unsigmoid);
-                    //if (bbox_conf < conf_thresh) continue;
-                    // xywh2xyxy
-                    // batched nms (by adding class * max_wh to coordinates,
-                    // we can get nms result for all classes by just one nms call)
-                    //grid[gridnum][gy][gx][0] = gx
-                    //grid[gridnum][gy][gx][1] = gy
-                    float cx = ((sigmoid(elmptr[0]) * 2.0f) - 0.5f + (float)gx) * (float)strides;
-                    float cy = ((sigmoid(elmptr[1]) * 2.0f) - 0.5f + (float)gy) * (float)strides;
-                    float w  = (sigmoid(elmptr[2]) * sigmoid(elmptr[2])) * 4.0f * (float)anchorgrid[ch][0];
-                    float h  = (sigmoid(elmptr[3]) * sigmoid(elmptr[3])) * 4.0f * (float)anchorgrid[ch][1];
-                    float x1 = cx - w / 2.0f + max_wh * max_class_idx;
-                    float y1 = cy - h / 2.0f + max_wh * max_class_idx;
-                    float x2 = cx + w / 2.0f + max_wh * max_class_idx;
-                    float y2 = cy + h / 2.0f + max_wh * max_class_idx;
-                    bbox box = bbox(x1, y1, x2, y2, bbox_conf, max_class_idx);
-                    bbox_candidates->push_back(box);
                     env->ReleaseFloatArrayElements((jfloatArray)ptr_d3, elmptr, 0);
                     env->DeleteLocalRef(ptr_d3);
                 }
@@ -99,6 +100,7 @@ void detector(
         }
         env->DeleteLocalRef(ptr_d0);
     }
+    env->DeleteLocalRef(input);
 }
 
 extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_TfliteRunner_postprocess (
