@@ -34,10 +34,12 @@ RUN pip3 install defusedxml
 # install requirements for yolov5
 COPY yolov5/requirements.txt /yolov5/requirements.txt
 RUN cd /yolov5 && pip3 install -r requirements.txt
-RUN apt-get install -y libgl1 libgtk-3 libgtk-3-dev
+RUN apt-get update --fix-missing
+RUN apt-get install -y libgl1 libgtk-3-0 libgtk-3-dev
 # install requirements for model conversion
 RUN pip3 install netron
 RUN pip3 install onnx
 RUN pip3 install onnx-simplifier
 RUN pip3 install tensorflow-datasets
 RUN pip3 install openvino2tensorflow==1.17.2
+RUN pip3 install gdown
