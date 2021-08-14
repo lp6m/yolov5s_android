@@ -9,17 +9,24 @@ Download the latest android apk from [release](https://github.com/lp6m/yolov5s_a
 ## Environment
 - Host : Ubuntu18.04
 - Docker: 
-    * Tensorflow  
-    * PyTorch  
-    * OpenVino  
+    * Tensorflow 2.4.0
+    * PyTorch 1.7.0
+    * OpenVino 2021.3
 - Android App
     * Android Studio 4.2.1
     * minSdkVersion 28
     * targetSdkVersion 29
     * TfLite 2.4.0
 - Android Device
-    * Xiaomi Mi11 (128GB/8GB)
+    * Xiaomi Mi11 (Storage 128GB/ RAM8GB)
     * OS: MUI 12.5.8
+We use docker container for host evaluation and model conversion.
+```sh
+git clone --recursive https://github.com/lp6m/yolov5s_android
+cd yolov5s_android
+docker build ./ -f ./docker/Dockerfile  -t yolov5s_android
+docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
+```
 
 ## Performance
 ### Latency (inference)
@@ -59,9 +66,9 @@ We set `conf_thresh=0.25` and `iou_thresh=0.45` for nms parameter.
 
 
 ## Model conversion
-This project focuses on obtaining a tflite model by **model conversion from PyTorch original implementation, rather than doing its own implementation in tflite**.  
-We convert models this way: `PyTorch -> ONNX -> OpenVino -> TfLite`.  
+This project focuses on obtaining a tflite model by **model conversion from PyTorch original implementation, rather than doing own implementation in tflite**.  
+We convert models in this way: `PyTorch -> ONNX -> OpenVino -> TfLite`.  
 To convert the model from OpenVino to TfLite, we use [openvino2tensorflow](https://github.com/PINTO0309/openvino2tensorflow).
-
+Please refer [convert_model/README.md](https://github.com/lp6m/yolov5s_android/tree/dev/convert_model) about the model conversion.
 
 ## TODO

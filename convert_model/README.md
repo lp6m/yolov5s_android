@@ -1,8 +1,10 @@
 # Model Conversion (PyTorch -> ONNX -> OpenVino -> Tensorflow -> TfLite)
 ## Why we convert the model via OpenVino?
-TODO
-<!-- TODO -->
-
+As you know, PyTorch have the `NCHW` layout, and Tensorfloww have `NHWC` layout.  
+`onnx-tf` supports model conversion from onnx to tensorflow, but the converted model includes a lot of `Transpose` layer because of the layout difference.  
+By using OpenVino's excellent model optimizer and [`openvino2tensorflow`](https://github.com/PINTO0309/openvino2tensorflow), we can obtain a model without unnecessary transpose layers.  
+For more information, please refer this article by the developer of `openvino2tensorflow` : [Converting PyTorch, ONNX, Caffe, and OpenVINO (NCHW) models to Tensorflow / TensorflowLite (NHWC) in a snap](https://qiita.com/PINTO/items/ed06e03eb5c007c2e102)
+  
 ## Docker build
 ```sh
 git clone --recursive https://github.com/lp6m/yolov5s_android
@@ -13,6 +15,7 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
 The following process is performed in docker container.  
 
 ## PyTorch -> ONNX
+Download the pytorch pretrained weights and export to ONNX format.  
 ```sh
 cd yolov5
 ./data/scripts/download_weights.sh #modify 'python' to 'python3' if needed
@@ -39,7 +42,11 @@ In this model, the output layer IDs are `397, 458, 519`.
 ### Why we exclude detect head layers?
 NNAPI does not support some layers included in detect head layers.  
 For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a).   operator for multiply layer is up to 4.  
-The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.
+The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.  
+  
+For the inference, the calculation of detect head layers are implemented outside of the tflite model.  
+For Android, the detect head layer is [implemented in C++ and executed on the CPU through JNI](https://github.com/lp6m/yolov5s_android/blob/dev/app/tflite_yolov5_test/app/src/main/cpp/postprocess.cpp).  
+For host evaluation, we use [PyTorch model](https://github.com/lp6m/yolov5s_android/blob/dev/host/detector_head.py) ported from original yolov5 repository.
 
 
 ## OpenVino -> TfLite
@@ -53,8 +60,7 @@ openvino2tensorflow \
 --output_saved_model \
 --output_no_quant_float32_tflite \
 --weight_replacement_config  ../convert_model/replace.json 
-# --output_integer_quant_tflite \
-# --output_full_integer_quant_tflite \
+# --output_full_integer_quant_tflite
 ```
 `--weight_replacement_config` is the file given to the `openvino2tensorflow` converter as a hint, since it is not possible to determine the exact dimension order of Transpose layer existing at the end of the model.  
 Please refer this document: [6-7. Replace weights or constant values in Const OP, and add Transpose or Reshape just before the operation specified by layer_id](https://github.com/PINTO0309/openvino2tensorflow/tree/v1.17.2#6-7-replace-weights-or-constant-values-in-const-op-and-add-transpose-or-reshape-just-before-the-operation-specified-by-layer_id).  
@@ -70,3 +76,6 @@ How to find the replace id:
 
 3. Modify `layer_id` parameter in `convert_model/replace.json`.  
 
+### Quantize model
+`openvino2tensorflow` can quantize the model using the tensroflow quantization.  
+Add `--output_full_integer_quant_tflite` option to openvino2tensorflow. (requires the tfds coco dataset and takes a lot of time to download.)  
