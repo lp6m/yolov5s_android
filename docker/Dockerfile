@@ -8,8 +8,8 @@ RUN pip3 install --upgrade pip
 RUN pip3 install tensorflow-gpu==2.4.0
 RUN pip3 install torch==1.7.0
 RUN pip3 install tensorflow-datasets
-# install openvino
 
+# install openvino
 ENV http_proxy $HTTP_PROXY
 ENV https_proxy $HTTP_PROXY
 ARG DOWNLOAD_LINK=https://registrationcenter-download.intel.com/akdlm/irc_nas/17662/l_openvino_toolkit_p_2021.3.394.tgz
@@ -36,6 +36,8 @@ COPY yolov5/requirements.txt /yolov5/requirements.txt
 RUN cd /yolov5 && pip3 install -r requirements.txt
 RUN apt-get update --fix-missing
 RUN apt-get install -y libgl1 libgtk-3-0 libgtk-3-dev
+RUN pip3 install pycocotools
+
 # install requirements for model conversion
 RUN pip3 install netron
 RUN pip3 install onnx
