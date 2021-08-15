@@ -40,7 +40,7 @@ def box_iou(box1, box2):
 
 
 def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=None,
-                        agnostic=False, multi_label=False, labels=(), max_det=300):
+                        agnostic=False, multi_label=False, labels=(), max_det=300, IMAGE_SIZE=640):
     """Runs Non-Maximum Suppression (NMS) on inference results
     Returns:
          list of detections, on (n,6) tensor per image [xyxy, conf, cls]
@@ -73,6 +73,8 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
         # Compute conf
         x[:, 5:] *= x[:, 4:5]  # conf = obj_conf * cls_conf
 
+        #
+        x[:, :4] = x[:, :4] * IMAGE_SIZE
         # Box (center x, center y, width, height) to (x1, y1, x2, y2)
         box = xywh2xyxy(x[:, :4])
 

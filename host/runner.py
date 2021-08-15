@@ -6,17 +6,32 @@ import torchvision
 
 from postprocess import non_max_suppression
 from detector_head import Detect
+from detector_head_tf import tf_Detect
 from PIL import Image
 
 class TfLiteRunner():
     def __init__(self, model_path, conf_thres=0.25, iou_thres=0.45, quantize_mode=False):
-        self.interpreter = tf.lite.Interpreter(model_path)
+        self.interpreter = tf.lite.Interpreter(model_path, num_threads=8)
         self.interpreter.allocate_tensors()
 
         self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
+        # self.output_tensor_names = [
+        #     'Identity:0',
+        #     'Identity_1:0',
+        #     'Identity_2:0'
+        # ]
+        self.output_tensor_names = ['import_1/Identity']
+        # reorder output details because sometimes output_details() order is unintended order.
+        output_details = self.interpreter.get_output_details()
+        self.output_details = [
+            next(filter(lambda detail: detail['name'] == name, output_details), None)
+            for name in self.output_tensor_names
+        ]
+        assert (None not in self.output_details), "model does not contain specified 'output_tensor_names'  "
+
         self.input_shape = self.input_details[0]['shape']
         self.detector = Detect()
+        self.tf_detector = tf_Detect()
 
         self.conf_thres = conf_thres
         self.iou_thres = iou_thres
@@ -37,6 +52,7 @@ class TfLiteRunner():
                 # dequantize
                 # output_data = (output_data.astype(np.float32))# / 255.0
                 # output_data = (output_data.astype(np.float32) + 128) / 255.0
+                print(output_data.shape)
                 scale, zero_point = output_detail['quantization']
                 print(f'scale = {scale}, zero_point = {zero_point}')
                 output_data = output_data.astype(np.float32)
@@ -72,11 +88,13 @@ class TfLiteRunner():
     def detect(self, input_data, from_pil_img=False):
         preprocessed = self.__preprocess(input_data, from_pil_img)
         tflite_out = self.__run_tflite(preprocessed)
-        print(len(tflite_out))
-        tflite_out = torch.from_numpy(tflite_out[0])
+        # detector_out = self.tf_detector(tflite_out)
+        detector_out = tflite_out[0]
+        # tflite_out = torch.from_numpy(tflite_out[0])
         # tflite_out = [torch.from_numpy(x) for x in tflite_out]
-        detector_out = tflite_out
-        print(detector_out.shape)
+        # detector_out = tflite_out
+        print(detector_out[0].shape)
+        detector_out = torch.from_numpy(detector_out)
         # detector_out = self.detector(tflite_out)
         bboxres = non_max_suppression(detector_out, conf_thres=self.conf_thres, iou_thres=self.iou_thres)
         return bboxres

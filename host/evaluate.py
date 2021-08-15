@@ -16,6 +16,7 @@ def evaluate_coco_dataset(
     iou_thres,
     result_output_path=None,
     validation_num=-1,
+    quantize_mode = False
     ):
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor()
@@ -24,7 +25,7 @@ def evaluate_coco_dataset(
                                         annFile=path_to_annotation,
                                         transform=transform)
     data_loader = torch.utils.data.DataLoader(valdata_set)
-    runner = TfLiteRunner(model_path, conf_thres, iou_thres)
+    runner = TfLiteRunner(model_path, conf_thres, iou_thres, quantize_mode)
     metric = CocoMetric(path_to_annotation)
     cnt = 0
     for data, target in data_loader:
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_image_num', default=-1, type=int, help="if specified, use first 'run_image_num' images for evaluation")
     parser.add_argument('--conf_thres', type=float, default=0.25)
     parser.add_argument('--iou_thres', type=float, default=0.45)
+    parser.add_argument('--quantize_mode', action='store_true')
     args = parser.parse_args()
 
     if args.mode == 'run':
@@ -61,7 +63,8 @@ if __name__ == '__main__':
                               args.conf_thres,
                               args.iou_thres,
                               args.output_json_path,
-                              args.run_image_num)
+                              args.run_image_num,
+                              args.quantize_mode)
     elif args.mode == 'loadjson':
         assert(args.load_json_path is not None)
         metric = CocoMetric(args.path_to_annotation)
