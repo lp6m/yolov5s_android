@@ -43,7 +43,7 @@ def evaluate_coco_dataset(
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model_path', default="/workspace/yolov5/openvino_flow/tflite/model_float32.tflite")
+    parser.add_argument('-m', '--model_path', default="/workspace/yolov5/tflite/model_float32.tflite")
     parser.add_argument('--path_to_annotation', default='/workspace/coco/instances_val2017.json')
     parser.add_argument('--coco_root', default='/workspace/coco/val2017')
     parser.add_argument('--mode', choices=['run', 'loadjson'], default='run', help="'run': evaluate inference results by running tflite model. 'loadjson': load inference results from json")

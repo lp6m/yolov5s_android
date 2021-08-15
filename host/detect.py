@@ -9,13 +9,14 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', default="dog.jpg")
-    parser.add_argument('-m', '--model_path', default="/workspace/yolov5/openvino_flow/tflite/model_float32.tflite")
+    parser.add_argument('-m', '--model_path', default="/workspace/yolov5/tflite/model_float32.tflite")
     parser.add_argument('--output_path', default='result.jpg')
     parser.add_argument('--conf_thres', type=float, default=0.25)
     parser.add_argument('--iou_thres', type=float, default=0.45)
+    parser.add_argument('--quantize_mode', action='store_true')
     args = parser.parse_args()
 
-    runner = TfLiteRunner(args.model_path, args.conf_thres, args.iou_thres)
+    runner = TfLiteRunner(args.model_path, args.conf_thres, args.iou_thres, args.quantize_mode)
     img = Image.open(args.image)
     bboxres = runner.detect(img, from_pil_img=True)
     img_cv = cv2.imread(args.image)
