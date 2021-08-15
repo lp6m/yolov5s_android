@@ -10,12 +10,14 @@ import torchvision.datasets
 
 def evaluate_coco_dataset(
     model_path,
+    input_size,
     coco_root,
     path_to_annotation,
     conf_thres,
     iou_thres,
     result_output_path=None,
     validation_num=-1,
+    quantize_mode=False
     ):
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor()
@@ -24,8 +26,8 @@ def evaluate_coco_dataset(
                                         annFile=path_to_annotation,
                                         transform=transform)
     data_loader = torch.utils.data.DataLoader(valdata_set)
-    runner = TfLiteRunner(model_path, conf_thres, iou_thres)
-    metric = CocoMetric(path_to_annotation)
+    runner = TfLiteRunner(model_path, input_size, conf_thres, iou_thres, quantize_mode)
+    metric = CocoMetric(path_to_annotation, input_size)
     cnt = 0
     for data, target in data_loader:
         print(cnt)
@@ -44,6 +46,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model_path', default="/workspace/yolov5/tflite/model_float32.tflite")
+    parser.add_argument('--input_size', type=int, default=640)
     parser.add_argument('--path_to_annotation', default='/workspace/coco/instances_val2017.json')
     parser.add_argument('--coco_root', default='/workspace/coco/val2017')
     parser.add_argument('--mode', choices=['run', 'loadjson'], default='run', help="'run': evaluate inference results by running tflite model. 'loadjson': load inference results from json")
@@ -52,16 +55,19 @@ if __name__ == '__main__':
     parser.add_argument('--run_image_num', default=-1, type=int, help="if specified, use first 'run_image_num' images for evaluation")
     parser.add_argument('--conf_thres', type=float, default=0.25)
     parser.add_argument('--iou_thres', type=float, default=0.45)
+    parser.add_argument('--quantize_mode', action='store_true')
     args = parser.parse_args()
 
     if args.mode == 'run':
         evaluate_coco_dataset(args.model_path,
+                              args.input_size,
                               args.coco_root,
                               args.path_to_annotation,
                               args.conf_thres,
                               args.iou_thres,
                               args.output_json_path,
-                              args.run_image_num)
+                              args.run_image_num,
+                              args.quantize_mode)
     elif args.mode == 'loadjson':
         assert(args.load_json_path is not None)
         metric = CocoMetric(args.path_to_annotation)

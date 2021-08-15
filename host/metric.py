@@ -13,7 +13,7 @@ class CocoMetric():
             64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
         return x
 
-    def __init__(self, path_to_annotation):
+    def __init__(self, path_to_annotation , INPUT_SIZE=640):
         """
 
         Parameters
@@ -24,6 +24,7 @@ class CocoMetric():
         self.cocoGt = COCO(path_to_annotation)
         self.results = []
         self.imgIds = set()
+        self.INPUT_SIZE = INPUT_SIZE
 
     def load_results_from_json(self, json_path):
         """
@@ -45,14 +46,14 @@ class CocoMetric():
         for bbox in bboxes:
             box_dict = {}
             x1, y1, x2, y2, score, class_idx = bbox.numpy()
-            x1 = min(max(x1, 0), 640)
-            y1 = min(max(y1, 0), 640)
-            x2 = min(max(x2, 0), 640)
-            y2 = min(max(y2, 0), 640)
-            x = float(x1) * im_w / 640
-            y = float(y1) * im_h / 640
-            w = float(x2 - x1) * im_w / 640
-            h = float(y2 - y1) * im_h / 640
+            x1 = min(max(x1, 0), self.INPUT_SIZE)
+            y1 = min(max(y1, 0), self.INPUT_SIZE)
+            x2 = min(max(x2, 0), self.INPUT_SIZE)
+            y2 = min(max(y2, 0), self.INPUT_SIZE)
+            x = float(x1) * im_w / self.INPUT_SIZE
+            y = float(y1) * im_h / self.INPUT_SIZE
+            w = float(x2 - x1) * im_w / self.INPUT_SIZE
+            h = float(y2 - y1) * im_h / self.INPUT_SIZE
             box_dict['image_id'] = image_id
             box_dict['bbox'] = [x, y, w, h]
             box_dict['category_id'] = CocoMetric.coco80_to_coco91_class()[int(class_idx)]
