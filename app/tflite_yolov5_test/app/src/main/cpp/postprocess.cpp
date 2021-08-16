@@ -6,15 +6,6 @@
 
 using namespace std;
 
-vector<int> argsort(const vector<bbox> &v){
-    vector<int> idx(v.size());
-    std::iota(idx.begin(), idx.end(), 0);
-    sort(idx.begin(), idx.end(),
-         [&v](int i1, int i2) {return v[i1].conf < v[i2].conf;});
-
-    return idx;
-}
-
 float sigmoid(float f){
     return (float)(1.0f / (1.0f + exp(-f)));
 }
@@ -22,19 +13,6 @@ float sigmoid(float f){
 float revsigmoid(float f){
     const float eps = 1e-8;
     return -1.0f * (float)log((1.0f / (f + eps)) - 1.0f);
-}
-
-
-
-float iou_bbox(bbox a, bbox b){
-    if (((a.x1 <= b.x1 && a.x2 > b.x1) || (a.x1 >= b.x1 && b.x2 > a.x1)) &&
-        ((a.y1 <= b.y1 && a.y2 > b.y1) || (a.y1 >= b.y1 && b.y2 > a.y1))){
-        float intersection_area = (min(a.x2, b.x2) - max(a.x1, b.x1)) * (min(a.y2, b.y2) - max(a.y1, b.y1));
-        float union_area = (a.x2 - a.x1) * (a.y2 - a.y1) + (b.x2 - b.x1) * (b.y2 - b.y1) - intersection_area;
-        return intersection_area / union_area;
-    } else {
-        return 0;
-    }
 }
 
 #define CLASS_NUM 80
@@ -51,22 +29,23 @@ void detector(
     //Warning: For now, we assume batch_size is always 1.
     for(int bi = 0; bi < 1; bi++){
         jobjectArray ptr_d0 = (jobjectArray)env->GetObjectArrayElement(input , bi);
-        for(int ch = 0; ch < 3; ch++){
-            jobjectArray ptr_d1 = (jobjectArray)env->GetObjectArrayElement(ptr_d0 , ch);
-            for(int gy = 0; gy < gridnum; gy++){
-                jobjectArray ptr_d2 = (jobjectArray)env->GetObjectArrayElement(ptr_d1 ,gy);
-                for(int gx = 0; gx < gridnum; gx++){
-                    jobjectArray ptr_d3 = (jobjectArray)env->GetObjectArrayElement(ptr_d2 ,gx);
-                    auto elmptr = env->GetFloatArrayElements((jfloatArray)ptr_d3 , nullptr);
+        for(int gy = 0; gy < gridnum; gy++){
+            jobjectArray ptr_d1 = (jobjectArray)env->GetObjectArrayElement(ptr_d0 ,gy);
+            for(int gx = 0; gx < gridnum; gx++){
+                jobjectArray ptr_d2 = (jobjectArray)env->GetObjectArrayElement(ptr_d1 ,gx);
+                auto elmptr = env->GetFloatArrayElements((jfloatArray)ptr_d2 , nullptr);
+                for(int ch = 0; ch < 3; ch++){
+                    int offset = 85 * ch;
+                    auto elmptr_ch = elmptr + offset;
                     //don't apply sigmoid to all bbox candidates for efficiency
-                    float obj_conf_unsigmoid = elmptr[4];
+                    float obj_conf_unsigmoid = elmptr_ch[4];
                     //if (sigmoid(obj_conf_unsigmoid) < conf_thresh) continue;
                     if (obj_conf_unsigmoid >= revsigmoid_conf) {
                         //get maximum conf class
-                        float max_class_conf = elmptr[5];
+                        float max_class_conf = elmptr_ch[5];
                         int max_class_idx = 0;
                         for(int class_idx = 1; class_idx < CLASS_NUM; class_idx++){
-                            float class_conf = elmptr[class_idx + 5];
+                            float class_conf = elmptr_ch[class_idx + 5];
                             if (class_conf > max_class_conf){
                                 max_class_conf = class_conf;
                                 max_class_idx = class_idx;
@@ -80,10 +59,10 @@ void detector(
                         // we can get nms result for all classes by just one nms call)
                         //grid[gridnum][gy][gx][0] = gx
                         //grid[gridnum][gy][gx][1] = gy
-                        float cx = ((sigmoid(elmptr[0]) * 2.0f) - 0.5f + (float)gx) * (float)strides;
-                        float cy = ((sigmoid(elmptr[1]) * 2.0f) - 0.5f + (float)gy) * (float)strides;
-                        float w  = (sigmoid(elmptr[2]) * sigmoid(elmptr[2])) * 4.0f * (float)anchorgrid[ch][0];
-                        float h  = (sigmoid(elmptr[3]) * sigmoid(elmptr[3])) * 4.0f * (float)anchorgrid[ch][1];
+                        float cx = ((sigmoid(elmptr_ch[0]) * 2.0f) - 0.5f + (float)gx) * (float)strides;
+                        float cy = ((sigmoid(elmptr_ch[1]) * 2.0f) - 0.5f + (float)gy) * (float)strides;
+                        float w  = (sigmoid(elmptr_ch[2]) * sigmoid(elmptr_ch[2])) * 4.0f * (float)anchorgrid[ch][0];
+                        float h  = (sigmoid(elmptr_ch[3]) * sigmoid(elmptr_ch[3])) * 4.0f * (float)anchorgrid[ch][1];
                         float x1 = cx - w / 2.0f + max_wh * max_class_idx;
                         float y1 = cy - h / 2.0f + max_wh * max_class_idx;
                         float x2 = cx + w / 2.0f + max_wh * max_class_idx;
@@ -91,9 +70,8 @@ void detector(
                         bbox box = bbox(x1, y1, x2, y2, bbox_conf, max_class_idx);
                         bbox_candidates->push_back(box);
                     }
-                    env->ReleaseFloatArrayElements((jfloatArray)ptr_d3, elmptr, 0);
-                    env->DeleteLocalRef(ptr_d3);
                 }
+                env->ReleaseFloatArrayElements((jfloatArray)ptr_d2, elmptr, 0);
                 env->DeleteLocalRef(ptr_d2);
             }
             env->DeleteLocalRef(ptr_d1);

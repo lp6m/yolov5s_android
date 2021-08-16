@@ -31,31 +31,31 @@ public class TfliteRunner {
     static {
         System.loadLibrary("native-lib");
     }
-    public native float[][] postprocess(float[][][][][] out1, float[][][][][] out2, float[][][][][] out3);
+    public native float[][] postprocess(float[][][][] out1, float[][][][] out2, float[][][][] out3);
     private Interpreter tfliteInterpreter;
     Mode runmode;
     class InferenceRawResultFloat{
         public int elapsed;
-        public float[][][][][] out1;
-        public float[][][][][] out2;
-        public float[][][][][] out3;
+        public float[][][][] out1;
+        public float[][][][] out2;
+        public float[][][][] out3;
 
         public InferenceRawResultFloat(){
-            this.out1 = new float[1][3][80][80][85];
-            this.out2 = new float[1][3][40][40][85];
-            this.out3 = new float[1][3][20][20][85];
+            this.out1 = new float[1][80][80][3*85];
+            this.out2 = new float[1][40][40][3*85];
+            this.out3 = new float[1][20][20][3*85];
         }
     }
     class InferenceRawResultInt{
         public int elapsed;
-        public byte[][][][][] out1;
-        public byte[][][][][] out2;
-        public byte[][][][][] out3;
+        public byte[][][][] out1;
+        public byte[][][][] out2;
+        public byte[][][][] out3;
 
         public InferenceRawResultInt(){
-            this.out1 = new byte[1][3][80][80][85];
-            this.out2 = new byte[1][3][40][40][85];
-            this.out3 = new byte[1][3][20][20][85];
+            this.out1 = new byte[1][80][80][3*85];
+            this.out2 = new byte[1][40][40][3*85];
+            this.out3 = new byte[1][20][20][3*85];
         }
     }
     Object[] inputArray;
