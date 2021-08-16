@@ -6,234 +6,283 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
-    <LinearLayout
-        android:layout_width="391dp"
-        android:layout_height="756dp"
-        android:orientation="vertical"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="-51dp">
-
-        <EditText
-            android:id="@+id/select_model_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName"
-            android:text="Select Model/Delegate" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="60dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <EditText
+                android:id="@+id/select_model_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:text="Select Model/Delegate" />
+
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                <RadioGroup
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/textView4"
-                        android:layout_width="59dp"
-                        android:layout_height="wrap_content"
+                    <RadioGroup
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="Model" />
+                        android:orientation="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/radioButton1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:checked="true"
-                        android:text="float"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
+                        <TextView
+                            android:id="@+id/textView4"
+                            android:layout_width="59dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Input Size" />
 
-                    <RadioButton
-                        android:id="@+id/radioButton2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:text="int8"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
-                </RadioGroup>
+                        <RadioButton
+                            android:id="@+id/radioButton_640"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:checked="true"
+                            android:text="640"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
 
-            </LinearLayout>
+                        <RadioButton
+                            android:id="@+id/radioButton_320"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:text="320"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+                    </RadioGroup>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="horizontal">
+                </LinearLayout>
 
-                <RadioGroup
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/textView5"
-                        android:layout_width="104dp"
-                        android:layout_height="wrap_content"
+                    <RadioGroup
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="Inference Precision" />
+                        android:orientation="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/radioButton3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:checked="true"
-                        android:text="fp32"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
+                        <TextView
+                            android:id="@+id/textView7"
+                            android:layout_width="59dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Model" />
 
-                    <RadioButton
-                        android:id="@+id/radioButton4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:text="fp16"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
+                        <RadioButton
+                            android:id="@+id/radioButton_modelFloat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:checked="true"
+                            android:text="float"
+                            android:onClick="onModelFloatClick"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
 
-                    <RadioButton
-                        android:id="@+id/radioButton5"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:text="int8"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
-                </RadioGroup>
+                        <RadioButton
+                            android:id="@+id/radioButton_modelInt"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:text="int8"
+                            android:onClick="onModelIntClick"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+                    </RadioGroup>
 
-            </LinearLayout>
+                </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="horizontal">
-
-                <RadioGroup
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/textView6"
-                        android:layout_width="72dp"
-                        android:layout_height="wrap_content"
+                    <RadioGroup
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="Delegate" />
+                        android:orientation="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/radioButton6"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
-                        android:layout_weight="1"
-                        android:checked="true"
-                        android:text="None"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
+                        <TextView
+                            android:id="@+id/textView5"
+                            android:layout_width="104dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Inference Precision" />
 
-                    <RadioButton
-                        android:id="@+id/radioButton7"
-                        android:layout_width="wrap_content"
-                        android:layout_height="23dp"
+                        <RadioButton
+                            android:id="@+id/radioButton_runFP32"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:checked="true"
+                            android:text="fp32"
+                            android:onClick="onPrecisionFPClick"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+
+                        <RadioButton
+                            android:id="@+id/radioButton_runFP16"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:text="fp16"
+                            android:onClick="onPrecisionFPClick"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+
+                        <RadioButton
+                            android:id="@+id/radioButton_runInt8"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:text="int8"
+                            android:onClick="onPrecisionIntClick"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+                    </RadioGroup>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <RadioGroup
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:text="NNAPI"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                        android:textSize="16sp"
-                        android:typeface="normal" />
-                </RadioGroup>
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textView6"
+                            android:layout_width="72dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Delegate" />
+
+                        <RadioButton
+                            android:id="@+id/radioButton_delegateNone"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:checked="true"
+                            android:text="None"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+
+                        <RadioButton
+                            android:id="@+id/radioButton_delegateNNAPI"
+                            android:layout_width="wrap_content"
+                            android:layout_height="23dp"
+                            android:layout_weight="1"
+                            android:text="NNAPI"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                            android:textSize="16sp"
+                            android:typeface="normal" />
+                    </RadioGroup>
+
+                </LinearLayout>
 
             </LinearLayout>
 
-        </LinearLayout>
+            <Button
+                android:id="@+id/openImageButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="OnOpenImageButtonClick"
+                android:text="Open Image" />
 
-        <Button
-            android:id="@+id/openImageButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="OnOpenImageButtonClick"
-            android:text="Open Image" />
+            <Button
+                android:id="@+id/openDirButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="OnOpenDirButtonClick"
+                android:text="Open Directory" />
 
-        <Button
-            android:id="@+id/openDirButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="OnOpenDirButtonClick"
-            android:text="Open Directory" />
+            <Button
+                android:id="@+id/runInferenceButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="OnRunInferenceButtonClick"
+                android:text="Run inference" />
 
-        <Button
-            android:id="@+id/runInferenceButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="OnRunInferenceButtonClick"
-            android:text="Run inference" />
+            <EditText
+                android:id="@+id/oneLineLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName" />
 
-        <EditText
-            android:id="@+id/oneLineLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName" />
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/resultImageView"
+                android:layout_width="match_parent"
+                android:layout_height="310dp"
+                tools:src="@tools:sample/avatars" />
 
-        <ImageView
-            android:id="@+id/resultImageView"
-            android:layout_width="match_parent"
-            android:layout_height="242dp"
-            tools:src="@tools:sample/avatars" />
-
-        <EditText
-            android:id="@+id/loglabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName"
-            android:text="Log" />
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="67dp">
+            <EditText
+                android:id="@+id/loglabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:text="Log" />
 
             <TextView
                 android:id="@+id/logTextView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scrollbars="vertical"
                 android:inputType="textMultiLine"
+                android:scrollbars="vertical"
                 android:text="TextView" />
-        </ScrollView>
 
-        <Button
-            android:id="@+id/clearLogButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:onClick="OnClearLogButton"
-            android:text="clear log" />
+            <Button
+                android:id="@+id/clearLogButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="OnClearLogButton"
+                android:text="clear log" />
 
-    </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

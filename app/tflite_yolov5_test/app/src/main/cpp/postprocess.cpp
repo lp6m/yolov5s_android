@@ -84,9 +84,10 @@ void detector(
 extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_TfliteRunner_postprocess (
         JNIEnv *env,
         jobject /* this */,
-        jobjectArray input1,//80x80
-        jobjectArray input2, //40x40,
-        jobjectArray input3){ //20x20){
+        jobjectArray input1,//80x80 or 40x40
+        jobjectArray input2, //40x40 or 20x20,
+        jobjectArray input3, //20x20 or 10x10
+        jint input_size){
     //conf
     const float conf_thresh = 0.25f;
     const float iou_thresh = 0.45f;
@@ -99,9 +100,9 @@ extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_TfliteRunner_postp
 
     vector<bbox> bbox_candidates; //TODO: reserve
     //Detector
-    detector(&bbox_candidates, env, input1, 80, strides[0], anchorgrids[0], conf_thresh);
-    detector(&bbox_candidates, env, input2, 40, strides[1], anchorgrids[1], conf_thresh);
-    detector(&bbox_candidates, env, input3, 20, strides[2], anchorgrids[2], conf_thresh);
+    detector(&bbox_candidates, env, input1, input_size / 8, strides[0], anchorgrids[0], conf_thresh);
+    detector(&bbox_candidates, env, input2, input_size / 16, strides[1], anchorgrids[1], conf_thresh);
+    detector(&bbox_candidates, env, input3, input_size / 32, strides[2], anchorgrids[2], conf_thresh);
     //non-max-suppression
     vector<bbox> nms_results = nms(bbox_candidates, iou_thresh);
 

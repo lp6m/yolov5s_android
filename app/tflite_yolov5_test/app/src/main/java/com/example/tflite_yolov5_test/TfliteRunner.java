@@ -25,49 +25,36 @@ import java.util.Map;
 import com.example.tflite_yolov5_test.TfliteRunMode.*;
 
 public class TfliteRunner {
-    final static int inputSize = 640;
     final int numBytesPerChannel_float = 4;
     final int numBytesPerChannel_int = 1;
     static {
         System.loadLibrary("native-lib");
     }
-    public native float[][] postprocess(float[][][][] out1, float[][][][] out2, float[][][][] out3);
+    public native float[][] postprocess(float[][][][] out1, float[][][][] out2, float[][][][] out3, int inputSize);
     private Interpreter tfliteInterpreter;
     Mode runmode;
-    class InferenceRawResultFloat{
+    int inputSize;
+    class InferenceRawResult{
         public int elapsed;
         public float[][][][] out1;
         public float[][][][] out2;
         public float[][][][] out3;
 
-        public InferenceRawResultFloat(){
-            this.out1 = new float[1][80][80][3*85];
-            this.out2 = new float[1][40][40][3*85];
-            this.out3 = new float[1][20][20][3*85];
-        }
-    }
-    class InferenceRawResultInt{
-        public int elapsed;
-        public byte[][][][] out1;
-        public byte[][][][] out2;
-        public byte[][][][] out3;
-
-        public InferenceRawResultInt(){
-            this.out1 = new byte[1][80][80][3*85];
-            this.out2 = new byte[1][40][40][3*85];
-            this.out3 = new byte[1][20][20][3*85];
+        public InferenceRawResult(int inputSize){
+            this.out1 = new float[1][inputSize/8][inputSize/8][3*85];
+            this.out2 = new float[1][inputSize/16][inputSize/16][3*85];
+            this.out3 = new float[1][inputSize/32][inputSize/32][3*85];
         }
     }
     Object[] inputArray;
     Map<Integer, Object> outputMap;
-    InferenceRawResultFloat float_rawres;
-    InferenceRawResultInt int_rawres;
+    InferenceRawResult rawres;
 
-    public TfliteRunner(Context context, Mode runmode) throws Exception{
+    public TfliteRunner(Context context, Mode runmode, int inputSize) throws Exception{
         this.runmode = runmode;
-        this.float_rawres = new InferenceRawResultFloat();
-        this.int_rawres = new InferenceRawResultInt();
-        loadModel(context, runmode, 4);
+        this.rawres = new InferenceRawResult(inputSize);
+        this.inputSize = inputSize;
+        loadModel(context, runmode, inputSize, 4);
     }
     private static MappedByteBuffer loadModelFile(AssetManager assets, String modelFilename)
             throws IOException {
@@ -78,7 +65,7 @@ public class TfliteRunner {
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
-    public void loadModel(Context context, Mode runmode, int num_threads) throws Exception{
+    public void loadModel(Context context, Mode runmode, int inputSize, int num_threads) throws Exception{
         Interpreter.Options options = new Interpreter.Options();
         NnApiDelegate.Options nnapi_options = new NnApiDelegate.Options();
         options.setNumThreads(num_threads);
@@ -86,6 +73,10 @@ public class TfliteRunner {
         switch (runmode){
             case NONE_FP32:
                 options.setUseXNNPACK(true);
+                break;
+            case NONE_FP16:
+                //TODO:deprecated?
+                options.setAllowFp16PrecisionForFp32(true);
                 break;
             case NNAPI_GPU_FP32:
                 nnapi_options.setAcceleratorName("qti-gpu");
@@ -108,11 +99,12 @@ public class TfliteRunner {
                 throw new RuntimeException("Unknown runmode!");
         }
         boolean quantized_mode = TfliteRunMode.isQuantizedMode(runmode);
-        String modelname = quantized_mode ? "yolov5s_int8.tflite" : "yolov5s_fp32.tflite";
+        String precision_str = quantized_mode ? "int8" : "fp32";
+        String modelname = "yolov5s_" + precision_str + "_" + String.valueOf(inputSize) + ".tflite";
         MappedByteBuffer tflite_model_buf = TfliteRunner.loadModelFile(context.getAssets(), modelname);
         this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
     }
-    static public Bitmap getResizedImage(Bitmap bitmap) {
+    static public Bitmap getResizedImage(Bitmap bitmap, int inputSize) {
         Bitmap resized = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, true);
         return resized;
     }
@@ -146,15 +138,9 @@ public class TfliteRunner {
         }
         this.inputArray = new Object[]{imgData};
         this.outputMap = new HashMap<>();
-        if (quantized_mode) {
-            outputMap.put(0, this.int_rawres.out1);
-            outputMap.put(1, this.int_rawres.out3);
-            outputMap.put(2, this.int_rawres.out2);
-        } else {
-            outputMap.put(0, this.float_rawres.out1);
-            outputMap.put(1, this.float_rawres.out2);
-            outputMap.put(2, this.float_rawres.out3);
-        }
+        outputMap.put(0, this.rawres.out1);
+        outputMap.put(1, this.rawres.out2);
+        outputMap.put(2, this.rawres.out3);
     }
     public float[][] runInference(){
         //return: float[bbox_num][6]
@@ -163,15 +149,11 @@ public class TfliteRunner {
         this.tfliteInterpreter.runForMultipleInputsOutputs(inputArray, outputMap);
         long end = System.currentTimeMillis();
         int elapsed = (int)(end - start);
-        if (TfliteRunMode.isQuantizedMode(this.runmode)) {
-            //postprocess for int precision is not implemented yet.
-            return null;
-        } else {
-            float[][] bboxes = postprocess(this.float_rawres.out1,
-                                           this.float_rawres.out2,
-                                           this.float_rawres.out3);
-            return bboxes;
-        }
+        float[][] bboxes = postprocess(this.rawres.out1,
+                this.rawres.out2,
+                this.rawres.out3,
+                this.inputSize);
+        return bboxes;
     }
     static int[] coco80_to_91class_map = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
             35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,

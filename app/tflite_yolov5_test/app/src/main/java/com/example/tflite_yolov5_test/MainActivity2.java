@@ -61,6 +61,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,7 @@ public class MainActivity2 extends AppCompatActivity {
     final int REQUEST_OPEN_FILE = 1;
     final int REQUEST_OPEN_DIRECTORY = 9999;
     //permission
+    private int inputSize = -1;
     private File[] process_files = null;
     private final int REQUEST_PERMISSION = 1000;
     private final String[] PERMISSIONS = {
@@ -158,10 +160,10 @@ public class MainActivity2 extends AppCompatActivity {
         }
         for(float[] bbox : bboxes){
             //clamp and scale to original image size
-            float x1 = Math.min(Math.max(0, bbox[0]), TfliteRunner.inputSize) * orig_w / (float)TfliteRunner.inputSize;
-            float y1 = Math.min(Math.max(0, bbox[1]), TfliteRunner.inputSize) * orig_h / (float)TfliteRunner.inputSize;
-            float x2 = Math.min(Math.max(0, bbox[2]), TfliteRunner.inputSize) * orig_w / (float)TfliteRunner.inputSize;
-            float y2 = Math.min(Math.max(0, bbox[3]), TfliteRunner.inputSize) * orig_h / (float)TfliteRunner.inputSize;
+            float x1 = Math.min(Math.max(0, bbox[0]), this.inputSize) * orig_w / (float)this.inputSize;
+            float y1 = Math.min(Math.max(0, bbox[1]), this.inputSize) * orig_h / (float)this.inputSize;
+            float x2 = Math.min(Math.max(0, bbox[2]), this.inputSize) * orig_w / (float)this.inputSize;
+            float y2 = Math.min(Math.max(0, bbox[3]), this.inputSize) * orig_h / (float)this.inputSize;
             float x = x1;
             float y = y1;
             float w = x2 - x1;
@@ -180,16 +182,24 @@ public class MainActivity2 extends AppCompatActivity {
     public void OnRunInferenceButtonClick(View view){
         Button button = (Button)findViewById(R.id.runInferenceButton);
         TfliteRunner runner;
+        TfliteRunMode.Mode runmode = getRunModeFromGUI();
+        this.inputSize = getInputSizeFromGUI();
         //validation
         if (this.process_files == null || this.process_files.length == 0){
+            showErrorDialog("Please select image or directory.");
             return;
         }
+        if (runmode == null) {
+            showErrorDialog("Please select valid configurations.");
+            return;
+        }
+
         //open model
         try {
             Context context = getApplicationContext();
-            runner = new TfliteRunner(context, TfliteRunMode.Mode.NNAPI_GPU_FP16);
+            runner = new TfliteRunner(context, runmode, this.inputSize);
         } catch (Exception e) {
-            addLog("Model load failed: " + e.getMessage());
+            showErrorDialog("Model load failed: " + e.getMessage());
             return;
         }
         //check background task status
@@ -230,7 +240,7 @@ public class MainActivity2 extends AppCompatActivity {
                                 File file = process_files[i];
                                 InputStream is = new FileInputStream(file);
                                 Bitmap bitmap = BitmapFactory.decodeStream(is);
-                                Bitmap resized = TfliteRunner.getResizedImage(bitmap);
+                                Bitmap resized = TfliteRunner.getResizedImage(bitmap, inputSize);
                                 runner.setInput(resized);
                                 float[][] bboxes = runner.runInference();
                                 Bitmap resBitmap = ImageProcess.drawBboxes(bboxes, resized);
@@ -248,7 +258,14 @@ public class MainActivity2 extends AppCompatActivity {
                                 bitmap.recycle();
                             }
                         } catch (Exception e) {
-                            addLog("Inference failed : " + e.getMessage());
+                            runOnUiThread(
+                                    new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            showErrorDialog("Inference failed : " + e.getMessage()) ;
+                                        }
+                                    }
+                            );
                         }
                         //completed
                         runOnUiThread(
@@ -262,9 +279,9 @@ public class MainActivity2 extends AppCompatActivity {
                                         if (process_files.length > 1) {
                                             try {
                                                 String jsonpath = saveBboxesToJson(resList, process_files[0], "result.json");
-                                                addLog("result json is saved : " + jsonpath);
+                                                showInfoDialog("result json is saved : " + jsonpath);
                                             } catch (Exception e){
-                                                addLog("json output failed : " + e.getMessage());
+                                                showErrorDialog("json output failed : " + e.getMessage());
                                             }
                                         }
                                     }
@@ -286,12 +303,20 @@ public class MainActivity2 extends AppCompatActivity {
         fileOutputStream.write(jstr.getBytes());
         return filepath;
     }
-
-    public void addLog(String logtxt){
+    private void showErrorDialog(String text){ showDialog("Error", text);}
+    private void showInfoDialog(String text){ showDialog("Info", text);}
+    private void showDialog(String title, String text){
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(text)
+                .setPositiveButton("OK" , null )
+                .create().show();
+    }
+    private void addLog(String logtxt){
         TextView logtext = findViewById(R.id.logTextView);
         logtext.setText(logtext.getText() + logtxt + "\n");
     }
-    public void setOneLineLog(String text){
+    private void setOneLineLog(String text){
         TextView onelinetextview = findViewById(R.id.oneLineLabel);
         onelinetextview.setText(text);
     }
@@ -333,7 +358,7 @@ public class MainActivity2 extends AppCompatActivity {
             try{
                 InputStream is = new FileInputStream(this.process_files[0]);
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
-                Bitmap resized = TfliteRunner.getResizedImage(bitmap);
+                Bitmap resized = TfliteRunner.getResizedImage(bitmap, this.inputSize);
                 setResultImage(resized);
             } catch(Exception ex){
                 setOneLineLog(ex.getMessage());
@@ -351,6 +376,64 @@ public class MainActivity2 extends AppCompatActivity {
     protected synchronized void runInBackground(final Runnable r) {
         if (this.handler != null) {
             this.handler.post(r);
+        }
+    }
+    private TfliteRunMode.Mode getRunModeFromGUI(){
+        boolean model_float = ((RadioButton)findViewById(R.id.radioButton_modelFloat)).isChecked();
+        boolean model_int8 = ((RadioButton)findViewById(R.id.radioButton_modelInt)).isChecked();
+        boolean precision_fp32 = ((RadioButton)findViewById(R.id.radioButton_runFP32)).isChecked();
+        boolean precision_fp16 = ((RadioButton)findViewById(R.id.radioButton_runFP16)).isChecked();
+        boolean precision_int8 = ((RadioButton)findViewById(R.id.radioButton_runInt8)).isChecked();
+        boolean delegate_none = ((RadioButton)findViewById(R.id.radioButton_delegateNone)).isChecked();
+        boolean delegate_nnapi = ((RadioButton)findViewById(R.id.radioButton_delegateNNAPI)).isChecked();
+        boolean[] gui_selected = {model_float, model_int8, precision_fp32, precision_fp16, precision_int8, delegate_none, delegate_nnapi};
+        final Map<TfliteRunMode.Mode, boolean[]> candidates = new HashMap<TfliteRunMode.Mode, boolean[]>(){{
+            put(TfliteRunMode.Mode.NONE_FP32,      new boolean[]{true, false, true, false, false, true, false});
+            put(TfliteRunMode.Mode.NONE_FP16,      new boolean[]{true, false, false, true, false, true, false});
+            put(TfliteRunMode.Mode.NNAPI_GPU_FP32, new boolean[]{true, false, true, false, false, false, true});
+            put(TfliteRunMode.Mode.NNAPI_GPU_FP16, new boolean[]{true, false, false, true, false, false, true});
+            put(TfliteRunMode.Mode.NONE_INT8,      new boolean[]{false, true, false, false, true, true, false});
+            put(TfliteRunMode.Mode.NNAPI_DSP_INT8, new boolean[]{false, true, false, false, true, false, true});
+        }};
+        for(Map.Entry<TfliteRunMode.Mode, boolean[]> entry : candidates.entrySet()){
+            if (Arrays.equals(gui_selected, entry.getValue())) return entry.getKey();
+        }
+        //not found
+        return null;
+    }
+    public int getInputSizeFromGUI(){
+        RadioButton input_640 = findViewById(R.id.radioButton_640);
+        if (input_640.isChecked()) return 640;
+        else return 320;
+    }
+    //Eliminate infeasible run configurations(model, precision)
+    public void onModelFloatClick(View view) {
+        RadioButton precision_int8 = findViewById(R.id.radioButton_runInt8);
+        if (precision_int8.isChecked()){
+            RadioButton precision_fp32 = findViewById(R.id.radioButton_runFP32);
+            precision_fp32.setChecked(true);
+        }
+    }
+    public void onModelIntClick(View view) {
+        RadioButton precision_fp32 = findViewById(R.id.radioButton_runFP32);
+        RadioButton precision_fp16 = findViewById(R.id.radioButton_runFP16);
+        if (precision_fp32.isChecked() || precision_fp16.isChecked()){
+            RadioButton precision_int8 = findViewById(R.id.radioButton_runInt8);
+            precision_int8.setChecked(true);
+        }
+    }
+    public void onPrecisionFPClick(View view){
+        RadioButton model_int = findViewById(R.id.radioButton_modelInt);
+        if (model_int.isChecked()) {
+            RadioButton model_fp = findViewById(R.id.radioButton_modelFloat);
+            model_fp.setChecked(true);
+        }
+    }
+    public void onPrecisionIntClick(View view){
+        RadioButton model_fp = findViewById(R.id.radioButton_modelFloat);
+        if (model_fp.isChecked()) {
+            RadioButton model_int = findViewById(R.id.radioButton_modelInt);
+            model_int.setChecked(true);
         }
     }
 }
