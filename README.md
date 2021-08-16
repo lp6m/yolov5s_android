@@ -19,7 +19,8 @@ Download the latest android apk from [release](https://github.com/lp6m/yolov5s_a
     * TfLite 2.4.0
 - Android Device
     * Xiaomi Mi11 (Storage 128GB/ RAM8GB)
-    * OS: MUI 12.5.8
+    * OS: MUI 12.5.8  
+  
 We use docker container for host evaluation and model conversion.
 ```sh
 git clone --recursive https://github.com/lp6m/yolov5s_android
@@ -31,38 +32,36 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
 ## Performance
 ### Latency (inference)
 These results are measured by [TFLite Model Benchmark Tool with C++ Binary](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/tools/benchmark#profiling-model-operators) on `Xiaomi Mi11`.  
-Please refer [`benchmark/benchmark.md`](https://github.com/lp6m/yolov5s_android/tree/dev/benchmark) about the detail of benchmark command.  
+Please refer [`benchmark/README.md`](https://github.com/lp6m/yolov5s_android/tree/dev/benchmark) about the detail of benchmark command.  
 The latency does not contain the pre/post processing time and data transfer time.  
 #### float32 model  
 
-|       delegate        | latency [ms] |
-| :-------------------- | -----------: |
-| None (CPU)            |          220 |
-| NNAPI (qti-gpu, fp32) |          167 |
-| NNAPI (qti-gpu, fp16) |           99 |
+|       delegate        | 640x640 [ms] | 320x320 [ms] |
+| :-------------------- | -----------: | -----------: |
+| None (CPU)            |          220 |              |
+| NNAPI (qti-gpu, fp32) |          167 |              |
+| NNAPI (qti-gpu, fp16) |           99 |              |
   
 #### int8 model
 We tried to accelerate the inference process by using `NNAPI (qti-dsp)` and offload calculation to Hexagon DSP, but it didn't work for now. Please see issue.
 <!-- set issue number -->
 
-|       delegate       | latency [ms] |
-| :------------------- | -----------: |
-| None (CPU)           |          159 |
-| NNAPI  (qti-default) |  Not working |
-| NNAPI  (qti-dsp)     |  Not working |
-
-### FPS (inference + postprocess)
-
+|       delegate       | 640x640 [ms] | 320x320 [ms] |
+| :------------------- | -----------: | -----------: |
+| None (CPU)           |          159 |              |
+| NNAPI  (qti-default) |  Not working |  Not working |
+| NNAPI  (qti-dsp)     |  Not working |  Not working |
 
 ## Accuracy
 <!-- change link to master after merge -->
 Please refer [host/README.md](https://github.com/lp6m/yolov5s_android/tree/dev/host#example2) about the evaluation method.    
 We set `conf_thresh=0.25` and `iou_thresh=0.45` for nms parameter.
-|     device /  delegate      | mAP  |
-| :-------------------------- | ---: |
-| host GPU (Tflite + PyTorch) | 27.8 |
-| NNAPI  (qti-gpu, fp16)      | 28.5 |
-| None   (int8)               |  xxx |
+|      device, model, delegate      | 640x640 mAP | 320x320 mAP |
+| :-------------------------------- | ----------: | ----------: |
+| host GPU (Tflite + PyTorch, fp32) |        27.8 |        26.6 |
+| host CPU (Tflite + PyTorch, int8) |        26.6 |        25.5 |
+| NNAPI  (qti-gpu, fp16)            |        28.5 |         xxx |
+| CPU    (int8)                     |        27.2 |        25.8 |
 
 
 ## Model conversion
