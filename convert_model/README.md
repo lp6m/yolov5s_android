@@ -1,7 +1,7 @@
 # Model Conversion (PyTorch -> ONNX -> OpenVino -> Tensorflow -> TfLite)
-## Why we convert the model via OpenVino?
+## Why we convert the model via OpenVino format?
 As you know, PyTorch have the `NCHW` layout, and Tensorfloww have `NHWC` layout.  
-`onnx-tf` supports model conversion from onnx to tensorflow, but the converted model includes a lot of `Transpose` layer because of the layout difference.  
+[`onnx-tf`](https://github.com/onnx/onnx-tensorflow) supports model conversion from onnx to tensorflow, but the converted model includes a lot of `Transpose` layer because of the layout difference.  
 By using OpenVino's excellent model optimizer and [`openvino2tensorflow`](https://github.com/PINTO0309/openvino2tensorflow), we can obtain a model without unnecessary transpose layers.  
 For more information, please refer this article by the developer of `openvino2tensorflow` : [Converting PyTorch, ONNX, Caffe, and OpenVINO (NCHW) models to Tensorflow / TensorflowLite (NHWC) in a snap](https://qiita.com/PINTO/items/ed06e03eb5c007c2e102)
   
@@ -29,20 +29,23 @@ python3 /opt/intel/openvino_2021.3.394/deployment_tools/model_optimizer/mo.py \
  --input_shape [1,3,640,640] \
  --output_dir ./openvino \
  --data_type FP32 \
- --output 397,458,519
+ --output Conv_245,Conv_325,Conv_405
 ```
-If you use the other verion yolov5, you have to check the output layer IDs in netron.
+You will get `yolov5s.bin  yolov5s.mapping  yolov5s.xml` as OpenVino model.  
+If you use the other verion yolov5, you have to check the output layer IDs in netron.  
+The output layers are three most bottom Convolution layers. 
 ```sh
 netron yolov5s.onnx
 ```
 <img src="https://github.com/lp6m/yolov5s_android/raw/media/onnx_model.png" width=50%> 
   
-In this model, the output layer IDs are `397, 458, 519`.  
+In this model, the output layer IDs are `Conv_245,Conv_325,Conv_405`.  
 **We convert the ONNX model without detect head layers.**
 ### Why we exclude detect head layers?
 NNAPI does not support some layers included in detect head layers.  
-For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a).   operator for multiply layer is up to 4.  
+For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a) operator for multiply layer is up to 4.  
 The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.  
+We tried to include detect head layers into tflite [in other method](https://github.com/lp6m/yolov5s_android/issues/2), but not successful yet.
   
 For the inference, the calculation of detect head layers are implemented outside of the tflite model.  
 For Android, the detect head layer is [implemented in C++ and executed on the CPU through JNI](https://github.com/lp6m/yolov5s_android/blob/dev/app/tflite_yolov5_test/app/src/main/cpp/postprocess.cpp).  
@@ -50,6 +53,7 @@ For host evaluation, we use [PyTorch model](https://github.com/lp6m/yolov5s_andr
 
 
 ## OpenVino -> TfLite
+Convert OpenVino model to Tensorflow and TfLite by using `openvino2tensorflow`.
 ```sh
 source /opt/intel/openvino_2021/bin/setupvars.sh 
 export PYTHONPATH=/opt/intel/openvino_2021/python/python3.6/:$PYTHONPATH
@@ -58,24 +62,32 @@ openvino2tensorflow \
 --model_output_path tflite \
 --output_pb \
 --output_saved_model \
---output_no_quant_float32_tflite \
---weight_replacement_config  ../convert_model/replace.json 
-# --output_full_integer_quant_tflite
+--output_no_quant_float32_tflite 
 ```
-`--weight_replacement_config` is the file given to the `openvino2tensorflow` converter as a hint, since it is not possible to determine the exact dimension order of Transpose layer existing at the end of the model.  
-Please refer this document: [6-7. Replace weights or constant values in Const OP, and add Transpose or Reshape just before the operation specified by layer_id](https://github.com/PINTO0309/openvino2tensorflow/tree/v1.17.2#6-7-replace-weights-or-constant-values-in-const-op-and-add-transpose-or-reshape-just-before-the-operation-specified-by-layer_id).  
-  
-If you convert the other version yolov5, the layer id to replace may be different. 
-How to find the replace id:
-1. Open `yolov5.xml` in netron and find 3 transpose layers, and remember the name of `custom` attribute of transpose layer. For example, `397/Cast_113007_const, 458/Cast_112979_const, 519/Cast_112993_const`.  
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_xml.png" width=50%>  
-
-2. Open `yolov5.xml` in text editor and search the `custom` layer name obtained in the previous step, and remember the layer `id`. For example, `324, 365, 406`.  
-
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/openvino_in_editor.png" width=50%>  
-
-3. Modify `layer_id` parameter in `convert_model/replace.json`.  
+You will get `model_float32.pb, model_float32.tflite`.  
 
 ### Quantize model
-`openvino2tensorflow` can quantize the model using the tensroflow quantization.  
-Add `--output_full_integer_quant_tflite` option to openvino2tensorflow. (requires the tfds coco dataset and takes a lot of time to download.)  
+Load the tensorflow frozen graph model (pb) obtained by the previous step, and quantize the model.  
+The precision of input layer is `uint8`. The precision of the output layer is `float32` for commonalize the postprocess implemented in C++(JNI). 
+For calibration process in quantization, you have to prepare coco dataset in tfds format.  
+```sh
+cd ../convert_model
+usage: quantize.py [-h] [--input_size INPUT_SIZE] [--pb_path PB_PATH]
+                   [--output_path OUTPUT_PATH] [--calib_num CALIB_NUM]
+                   [--tfds_root TFDS_ROOT] [--download_tfds]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --input_size INPUT_SIZE
+  --pb_path PB_PATH
+  --output_path OUTPUT_PATH
+  --calib_num CALIB_NUM
+                        number of images for calibration.
+  --tfds_root TFDS_ROOT
+  --download_tfds       download tfds. it takes a lot of time.
+```
+```sh
+python3 quantize.py --input_size 320 --pb_path /workspace/yolov5/tflite/model_float32.pb \
+--output_path /workspace/yolov5/tflite/model_quantized.tflite
+--calib_num 100
+```
