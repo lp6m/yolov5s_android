@@ -1,5 +1,21 @@
 These results are measured by [TFLite Model Benchmark Tool with C++ Binary](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/tools/benchmark#profiling-model-operators) on `Xiaomi Mi11`.  
-We build the benchmark tool on [TfLite nightly version](https://github.com/tensorflow/tensorflow/tree/05bef3f775dc7cb0381d71623c49d4cfc71a9c5b).
+We build the benchmark tool on Tensorflow v2.4.0.
+```sh
+# before build benchmark tool, you have to install AndroidStudio.
+git clone https://github.com/tensorflow/tensorflow
+cd tensorflow
+git checkout refs/tags/v2.4.0
+export ANDROID_NDK_HOME="/home/lp6m/Android/Sdk/ndk/21.4.7075529"
+export ANDROID_NDK_API_LEVEL="21"
+export ANDROID_BUILD_TOOLS_VERSION="30.0.3"
+export ANDROID_SDK_API_LEVEL="29"
+export ANDROID_SDK_HOME="/home/lp6m/Android/Sdk"
+bazel build -c opt \
+  --config=android_arm64 \
+  tensorflow/lite/tools/benchmark:benchmark_model
+# copy benchmark tool to Android device
+adb push bazel-bin/tensorflow/lite/tools/benchmark/benchmark_model /data/local/tmp
+```
 
 ## FP32 model
 ### None(CPU)
