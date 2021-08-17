@@ -11,6 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:text="Open Camera"
+        android:onClick="OnStartCameraButton"
         tools:layout_editor_absoluteX="127dp"
         tools:layout_editor_absoluteY="345dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

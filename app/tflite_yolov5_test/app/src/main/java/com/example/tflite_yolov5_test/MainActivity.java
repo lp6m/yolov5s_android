@@ -3,6 +3,8 @@ package com.example.tflite_yolov5_test;
 import android.content.Context;
 import android.os.Bundle;
 
+import com.example.tflite_yolov5_test.camera.DetectorActivity;
+import com.example.tflite_yolov5_test.camera.ImageProcess;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,59 +17,34 @@ import com.example.tflite_yolov5_test.databinding.ActivityMain2Binding;
 
 import android.Manifest;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.database.Cursor;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.net.Uri;
-import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.provider.DocumentsContract;
-import android.provider.MediaStore;
-import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import java.io.IOException;
-import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
-import org.tensorflow.lite.Interpreter;
 //import org.tensorflow.lite.gpu.GpuDelegate;
-import org.tensorflow.lite.nnapi.NnApiDelegate;
-import org.w3c.dom.Text;
 
-import java.nio.ByteBuffer;
 import java.io.*;
-import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
-import fi.iki.elonen.NanoHTTPD;
+
 import java.lang.Math;
 public class MainActivity extends AppCompatActivity {
 
@@ -326,6 +303,10 @@ public class MainActivity extends AppCompatActivity {
     void setImageView(Bitmap bitmap){
         ImageView imageview = (ImageView)findViewById(R.id.resultImageView);
         imageview.setImageBitmap(bitmap);
+    }
+    public void OnStartCameraButton(View view){
+        Intent intent = new Intent(MainActivity.this, DetectorActivity.class);
+        startActivity(intent);
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

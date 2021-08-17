@@ -15,3 +15,4 @@
 local.properties
 
 app/src/main/assets/*.tflite
+app/release

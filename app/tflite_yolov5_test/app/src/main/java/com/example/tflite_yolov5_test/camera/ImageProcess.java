@@ -1,4 +1,4 @@
-package com.example.tflite_yolov5_test;
+package com.example.tflite_yolov5_test.camera;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
