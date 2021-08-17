@@ -37,11 +37,11 @@ The output layers are three most bottom Convolution layers.
 ```sh
 netron yolov5s.onnx
 ```
-<img src="https://github.com/lp6m/yolov5s_android/raw/media/onnx_model.png" width=50%> 
+<img src="https://github.com/lp6m/yolov5s_android/raw/media/onnx_output_layers.png" width=50%> 
   
 In this model, the output layer IDs are `Conv_245,Conv_325,Conv_405`.  
 **We convert the ONNX model without detect head layers.**
-### Why we exclude detect head layers?
+### Why we exclude detect head layers?https://github.com/onnx/onnx-tensorflow
 NNAPI does not support some layers included in detect head layers.  
 For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a) operator for multiply layer is up to 4.  
 The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.  
@@ -87,7 +87,7 @@ optional arguments:
   --download_tfds       download tfds. it takes a lot of time.
 ```
 ```sh
-python3 quantize.py --input_size 320 --pb_path /workspace/yolov5/tflite/model_float32.pb \
+python3 quantize.py --input_size 640 --pb_path /workspace/yolov5/tflite/model_float32.pb \
 --output_path /workspace/yolov5/tflite/model_quantized.tflite
 --calib_num 100
 ```

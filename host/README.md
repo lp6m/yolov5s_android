@@ -60,7 +60,7 @@ optional arguments:
 
 ### Example1
 ```
-python3 evaluate.py --mode run  --output_json_path coco_5000.json
+python3 evaluate.py --mode run  --model_path /workspace/yolov5/tflite/model_float32.tflite --output_json_path coco_5000.json
 Loading and preparing results...
 DONE (t=0.25s)
 creating index...
