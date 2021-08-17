@@ -13,8 +13,6 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.example.tflite_yolov5_test.databinding.ActivityMain2Binding;
-
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -89,24 +87,11 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    private ActivityMain2Binding binding;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityMain2Binding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        BottomNavigationView navView = findViewById(R.id.nav_view);
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
-                .build();
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main2);
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
-        NavigationUI.setupWithNavController(binding.navView, navController);
+        setContentView(R.layout.activity_main);
     }
     public void OnOpenImageButtonClick(View view){
         checkPermission();
@@ -231,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                                                 pbar.setProgress(Math.min(100, (ii+1) * 100 / process_files.length));
                                                 setResultImage(resBitmap);
                                             }
-                                });
+                                        });
                                 bitmap.recycle();
                             }
                         } catch (Exception e) {
@@ -304,7 +289,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView imageview = (ImageView)findViewById(R.id.resultImageView);
         imageview.setImageBitmap(bitmap);
     }
-    public void OnStartCameraButton(View view){
+    public void OnOpenCameraButtonClick(View view){
         Intent intent = new Intent(MainActivity.this, DetectorActivity.class);
         startActivity(intent);
     }

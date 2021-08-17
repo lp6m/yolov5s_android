@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.home.HomeFragment">
-
+    tools:context=".MainActivity">
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -221,6 +220,13 @@
             </LinearLayout>
 
             <Button
+                android:id="@+id/openCameraButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="OnOpenCameraButtonClick"
+                android:text="Open Camera" />
+
+            <Button
                 android:id="@+id/openImageButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -286,5 +292,4 @@
 
         </LinearLayout>
     </ScrollView>
-
 </androidx.constraintlayout.widget.ConstraintLayout>
