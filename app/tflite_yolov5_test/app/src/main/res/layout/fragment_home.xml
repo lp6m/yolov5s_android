@@ -17,13 +17,14 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <EditText
+            <TextView
                 android:id="@+id/select_model_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:inputType="textPersonName"
-                android:text="Select Model/Delegate" />
+                android:text="Select Model/Delegate"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textColor="#000000" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -240,12 +241,13 @@
                 android:onClick="OnRunInferenceButtonClick"
                 android:text="Run inference" />
 
-            <EditText
+            <TextView
                 android:id="@+id/oneLineLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:inputType="textPersonName" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textColor="#000000" />
 
             <ProgressBar
                 android:id="@+id/progressBar"
@@ -259,21 +261,21 @@
                 android:layout_height="310dp"
                 tools:src="@tools:sample/avatars" />
 
-            <EditText
+            <TextView
                 android:id="@+id/loglabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
-                android:inputType="textPersonName"
-                android:text="Log" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:text="Log"
+                android:textColor="#000000" />
 
             <TextView
                 android:id="@+id/logTextView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:inputType="textMultiLine"
-                android:scrollbars="vertical"
-                android:text="TextView" />
+                android:scrollbars="vertical" />
 
             <Button
                 android:id="@+id/clearLogButton"
