@@ -1,5 +1,18 @@
 package com.example.tflite_yolov5_test;
 
+import android.content.Context;
+import android.os.Bundle;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+
+import com.example.tflite_yolov5_test.databinding.ActivityMain2Binding;
+
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -15,11 +28,16 @@ import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -29,6 +47,7 @@ import android.widget.ToggleButton;
 import java.io.IOException;
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.tensorflow.lite.Interpreter;
 //import org.tensorflow.lite.gpu.GpuDelegate;
@@ -40,31 +59,33 @@ import java.io.*;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
 import fi.iki.elonen.NanoHTTPD;
 import java.lang.Math;
-
 public class MainActivity extends AppCompatActivity {
+
     final int REQUEST_OPEN_FILE = 1;
     final int REQUEST_OPEN_DIRECTORY = 9999;
-    /*static {
-        System.loadLibrary("native-lib");
-    }*/
-    //public native float[][] postprocess(float[][][][][] out1, float[][][][][] out2, float[][][][][] out3);
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-    }
-    private Interpreter tfliteInterpreter = null;
+    //permission
+    private int inputSize = -1;
+    private File[] process_files = null;
     private final int REQUEST_PERMISSION = 1000;
     private final String[] PERMISSIONS = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
     };
+    //background task
+    private boolean handler_stop_request;
+    private Handler handler;
+    private HandlerThread handlerThread;
+
     private void checkPermission(){
         if (!isGranted()){
             requestPermissions(PERMISSIONS, REQUEST_PERMISSION);
@@ -77,390 +98,341 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_PERMISSION){
             boolean result = isGranted();
             Toast.makeText(getApplicationContext(), result ? "OK" : "NG", Toast.LENGTH_SHORT).show();
-
-
         }
     }
     private boolean isGranted(){
         for (int i = 0; i < PERMISSIONS.length; i++){
-            //初回はPERMISSION_DENIEDが返る
             if (checkSelfPermission(PERMISSIONS[i]) != PackageManager.PERMISSION_GRANTED) {
-                //一度リクエストが拒絶された場合にtrueを返す．初回，または「今後表示しない」が選択された場合，falseを返す．
                 if (shouldShowRequestPermissionRationale(PERMISSIONS[i])) {
-                    Toast.makeText(this, "アプリを実行するためには許可が必要です", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "permission is required", Toast.LENGTH_LONG).show();
                 }
                 return false;
             }
         }
         return true;
     }
-    private void loadDirectory(Uri uri) {
-        addLog(uri.getPath());
-        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri,
-                DocumentsContract.getTreeDocumentId(uri));
-        String fullpath = PathUtils.getPath(getApplicationContext(), docUri);
-        addLog(fullpath);
-        File directory = new File(fullpath);
-        File[] files = directory.listFiles();
-        addLog("Found file :" + String.valueOf(files.length));
-        new AlertDialog.Builder(this)
-                .setTitle("title")
-                .setMessage("message")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which)  {
-                        // OK button pressed
-//                        this.fileName = "test.txt";
-//                        this.path = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).toString();
-                        try {
-                            String dirpath = fullpath;
-                            String filepath = dirpath + "/" + "unko.txt";
-                            addLog(filepath);
-                            String state = Environment.getExternalStorageState();
-                            if (Environment.MEDIA_MOUNTED.equals(state)) {
-                                FileOutputStream fileOutputStream = new FileOutputStream(filepath, true);
-                                String str = "Hello Unko";
-                                fileOutputStream.write(str.getBytes());
 
-                            }else{
-                                addLog("Failed2");
-                            }
-                        } catch (FileNotFoundException e) {
-                            addLog("Failed");
-                        } catch (IOException e) {
-                            addLog("Failed3");
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+    private ActivityMain2Binding binding;
 
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
+        binding = ActivityMain2Binding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        BottomNavigationView navView = findViewById(R.id.nav_view);
+        // Passing each menu ID as a set of Ids because each
+        // menu should be considered as top level destinations.
+        AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
+                .build();
+        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main2);
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        NavigationUI.setupWithNavController(binding.navView, navController);
     }
-    private String inferenceMode = "unknown";
-    private boolean loadModel(Uri uri) {
-        try{
-            String fullpath = PathUtils.getPath(getApplicationContext(), uri);
-            Toast.makeText(getApplicationContext(), fullpath, Toast.LENGTH_SHORT).show();
-            FileInputStream f_input_stream = new FileInputStream(new File(fullpath));
-            FileChannel f_channel = f_input_stream.getChannel();
-            MappedByteBuffer tflite_model_buf = f_channel.map(FileChannel.MapMode.READ_ONLY, 0, f_channel .size());
-            //None, GPU, NNAPI(fp32) NNAPI(fp16)
-
-            //options.setUseNNAPI(this.use_nnapi); //NNAPI
-
-            if (((RadioButton) findViewById(R.id.NoneButton)).isChecked()){
-                //None
-                Interpreter.Options options = new Interpreter.Options();
-                options.setNumThreads(8);
-                options.setUseXNNPACK(true);
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "None";
-                this.quantizeMode = true;
-            } else if (((RadioButton) findViewById(R.id.GPUFP32Button)).isChecked()){
-                //GPU FP32
-                /*Interpreter.Options options = new Interpreter.Options();
-                GpuDelegate.Options gpu_options = new GpuDelegate.Options();
-                gpu_options.setPrecisionLossAllowed(false);
-                options.addDelegate(new GpuDelegate(gpu_options));
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "GPU FP32";*/
-            } else if (((RadioButton) findViewById(R.id.GPUFP16Button)).isChecked()){
-                //GPU FP16
-                /*Interpreter.Options options = new Interpreter.Options();
-                GpuDelegate.Options gpu_options = new GpuDelegate.Options();
-                gpu_options.setPrecisionLossAllowed(true);
-                options.addDelegate(new GpuDelegate(gpu_options));
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "GPU FP16";*/
-            } else if (((RadioButton) findViewById(R.id.NNAPIFP32Button)).isChecked()){
-                //NNAPI FP32
-                Interpreter.Options options = new Interpreter.Options();
-                NnApiDelegate.Options nnapi_options = new NnApiDelegate.Options();
-                nnapi_options.setAllowFp16(false);
-                options.addDelegate(new NnApiDelegate(nnapi_options));
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "NNAPI FP32";
-                this.quantizeMode = false;
-            } else if (((RadioButton) findViewById(R.id.NNAPIFP16Button)).isChecked()) {
-                //NNAPI FP16
-                Interpreter.Options options = new Interpreter.Options();
-                NnApiDelegate.Options nnapi_options = new NnApiDelegate.Options();
-                nnapi_options.setAllowFp16(true);
-                options.addDelegate(new NnApiDelegate(nnapi_options));
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "NNAPI FP16";
-                this.quantizeMode = false;
-            } else if (((RadioButton) findViewById(R.id.NNAPIint8)).isChecked()) {
-                Interpreter.Options options = new Interpreter.Options();
-                //NnApiDelegate.Options nnapi_options = new NnApiDelegate.Options();
-                //nnapi_options.setAcceleratorName("qti-dsp");
-                //nnapi_options.setUseNnapiCpu(false);
-                //nnapi_options.setExecutionPreference(1);//single first answer
-                options.setUseNNAPI(true);
-                //options.setUseXNNPACK(true);
-                //options.setNumThreads(4);
-                //options.addDelegate(new NnApiDelegate(nnapi_options));
-                this.tfliteInterpreter = new Interpreter(tflite_model_buf, options);
-                this.inferenceMode = "NNAPI int8";
-                this.quantizeMode = true;
-            } else{
-                throw new Exception("unknown mode!!!");
-            }
-
-            Toast.makeText(getApplicationContext(), "load success!! " + this.inferenceMode, Toast.LENGTH_SHORT).show();
-            return true;
-        } catch (Exception ex){
-            Toast.makeText(getApplicationContext(), ex.getMessage(), Toast.LENGTH_SHORT).show();
-            addLog(ex.getMessage());
-            return false;
-        }
-
-    }
-    public void OnOpenDirectoryClick(View view) {
-        checkPermission();
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-//        Uri uri = Uri.parse(Environment.getExternalStorageState());
-//        addLog(uri.toString());
-        intent.addCategory(Intent.CATEGORY_DEFAULT);
-//        intent.setType("file/*");
-        startActivityForResult(Intent.createChooser(intent, "Open directory"), REQUEST_OPEN_DIRECTORY);
-    }
-    public boolean quantizeMode;
-    public void OnOpenButtonClick(View view) {
-
+    public void OnOpenImageButtonClick(View view){
         checkPermission();
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(Intent.createChooser(intent, "Open a tflite model file"), REQUEST_OPEN_FILE);
+        startActivityForResult(Intent.createChooser(intent, "Open an image"), REQUEST_OPEN_FILE);
+    }
+    public void OnOpenDirButtonClick(View view){
+        checkPermission();
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        startActivityForResult(Intent.createChooser(intent, "Open directory"), REQUEST_OPEN_DIRECTORY);
+    }
+    public void setResultImage(Bitmap bitmap){
+        ImageView imageview = (ImageView)findViewById(R.id.resultImageView);
+        imageview.setImageBitmap(bitmap);
+    }
+    ArrayList<HashMap<String, Object>> bboxesToMap(File file, float[][] bboxes, int orig_h, int orig_w){
+        ArrayList<HashMap<String, Object>> resList = new ArrayList<HashMap<String, Object>>();
+        String basename = file.getName();
+        basename = basename.substring(0, basename.lastIndexOf('.'));
+        Object image_id;
+        try{
+            image_id = Integer.parseInt(basename);
+        } catch (Exception e){
+            image_id = basename;
+        }
+        for(float[] bbox : bboxes){
+            //clamp and scale to original image size
+            float x1 = Math.min(Math.max(0, bbox[0]), this.inputSize) * orig_w / (float)this.inputSize;
+            float y1 = Math.min(Math.max(0, bbox[1]), this.inputSize) * orig_h / (float)this.inputSize;
+            float x2 = Math.min(Math.max(0, bbox[2]), this.inputSize) * orig_w / (float)this.inputSize;
+            float y2 = Math.min(Math.max(0, bbox[3]), this.inputSize) * orig_h / (float)this.inputSize;
+            float x = x1;
+            float y = y1;
+            float w = x2 - x1;
+            float h = y2 - y1;
+            float conf = bbox[4];
+            int class_idx = TfliteRunner.get_coco91_from_coco80((int)bbox[5]);
+            HashMap<String, Object> mapbox = new HashMap<>();
+            mapbox.put("image_id", image_id);
+            mapbox.put("bbox", new float[]{x, y, w, h});
+            mapbox.put("score", conf);
+            mapbox.put("category_id", class_idx);
+            resList.add(mapbox);
+        }
+        return resList;
+    }
+    public void OnRunInferenceButtonClick(View view){
+        Button button = (Button)findViewById(R.id.runInferenceButton);
+        TfliteRunner runner;
+        TfliteRunMode.Mode runmode = getRunModeFromGUI();
+        this.inputSize = getInputSizeFromGUI();
+        //validation
+        if (this.process_files == null || this.process_files.length == 0){
+            showErrorDialog("Please select image or directory.");
+            return;
+        }
+        if (runmode == null) {
+            showErrorDialog("Please select valid configurations.");
+            return;
+        }
 
-        Toast.makeText(getApplicationContext(),"ハローうんこ！！！", Toast.LENGTH_SHORT).show();
-    }
-    public void addLog(String logtxt){
-        TextView logtext = findViewById(R.id.logtextbox);
-        logtext.setText(logtext.getText() + logtxt + "\n");
-    }
-    public void addLog2(String logtxt){
-        TextView logtext = findViewById(R.id.logTextBox2);
-        logtext.setText(logtext.getText() + logtxt + "\n");
-    }
-    ServerApp serverApp;
-    public void onServerSwitchButtonClick(View view) throws IOException{
-        boolean checked = ((Switch) findViewById(R.id.serverSwitch)).isChecked();
-        if (checked) {
-            if (this.serverApp != null) {
-                addLog2("already server started");
-            } else {
-                this.serverApp = new ServerApp();
-            }
-        } else {
-            addLog2("server stopped");
-            this.serverApp.stop();
-            this.serverApp = null;
-        }
-    }
-    public class ServerApp extends NanoHTTPD {
-        public InferenceRawResult inferenceRawResult;
-        public void setResulet(InferenceRawResult result){
-            this.inferenceRawResult = result;
-        }
-        public ServerApp() throws IOException {
-            super(8080);
-            start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
-            addLog2("\nRunning! Point your browsers to http://localhost:8080/ \n");
-        }
-
-        @Override
-        public Response serve(IHTTPSession session) {
-            String msg = "<html><body><h1>Hello server</h1>\n";
-            Map<String, String> parms = session.getParms();
-            //if (parms.get("username") == null) {
-            HashMap<String, Object> mapobj = new HashMap<String, Object>();
-            mapobj.put("elapsed", this.inferenceRawResult.elapsed);
-            //mapobj.put("out", this.inferenceRawResult.out);
-            mapobj.put("out1", this.inferenceRawResult.out1);
-            mapobj.put("out2", this.inferenceRawResult.out2);
-            mapobj.put("out3", this.inferenceRawResult.out3);
-            JSONObject jobj = new JSONObject(mapobj);
-            return NanoHTTPD.newFixedLengthResponse(Response.Status.OK,
-                    "application/json",
-                    jobj.toString());
-        }
-    }
-
-    InferenceRawResult inferenceRawResult;
-    public void OnRunInferenceButtonClick(View view) {
-        this.inferenceRawResult = RunInference();
-        if (this.serverApp != null) {
-            this.serverApp.setResulet(this.inferenceRawResult);
-        }
-    }
-
-    class InferenceRawResult{
-        public int elapsed;
-        //public float[][][] out;
-        public float[][][][][] out1;
-        public float[][][][][] out2;
-        public float[][][][][] out3;
-
-        public InferenceRawResult(){
-            //this.out = new float[1][25200][85];
-            this.out1 = new float[1][3][80][80][85];
-            this.out2 = new float[1][3][40][40][85];
-            this.out3 = new float[1][3][20][20][85];
-        }
-    }
-    class InferenceRawResultInt{
-        public int elapsed;
-        //public float[][][] out;
-        public byte[][][][][] out1;
-        public byte[][][][][] out2;
-        public byte[][][][][] out3;
-
-        public InferenceRawResultInt(){
-            this.out1 = new byte[1][3][80][80][85];
-            this.out2 = new byte[1][3][40][40][85];
-            this.out3 = new byte[1][3][20][20][85];
-        }
-    }
-    public float sigmoid(float x){
-        return (float)(1.0 / (1.0 + Math.exp(-x)));
-    }
-    public InferenceRawResult RunInference(){
-        InferenceRawResult result = new InferenceRawResult();
-        InferenceRawResultInt resultInt = new InferenceRawResultInt();
+        //open model
         try {
-            //preprocess
-            int numBytesPerChannel;
-            boolean isQuantized = this.quantizeMode;
-            boolean isModelQuantized = this.quantizeMode;
-            final int inputSize = 640;
-            if (isQuantized) {
-                numBytesPerChannel = 1; // Quantized
-            } else {
-                numBytesPerChannel = 4; // Floating point
+            Context context = getApplicationContext();
+            runner = new TfliteRunner(context, runmode, this.inputSize);
+        } catch (Exception e) {
+            showErrorDialog("Model load failed: " + e.getMessage());
+            return;
+        }
+        //check background task status
+        if(this.handlerThread != null && this.handlerThread.isAlive()){
+            //already inference is running, stop inference
+            this.handler_stop_request = true;
+            this.handlerThread.quitSafely();
+            try {
+                handlerThread.join();
+                handlerThread = null;
+                handler = null;
+            } catch (final InterruptedException e) {
+                addLog(e.getMessage() +  "Exception!");
             }
-            ByteBuffer imgData = ByteBuffer.allocateDirect(1 * inputSize * inputSize * 3 * numBytesPerChannel);
-            //Bitmap bitmap = new Bitmap();
-            InputStream is = getResources().getAssets().open("dog_letter.jpg");
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
-            ImageView imageview = (ImageView)findViewById(R.id.imageView);
-//            imageview.setImageBitmap(mutableBitmap);
-            int[] intValues = new int[inputSize * inputSize];
-            bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+            button.setText("Run Inference");
+            return;
+        } else {
+            //start inference task
+            this.handler_stop_request = false;
+            button.setText("Stop Inference");
+        }
 
-            imgData.order(ByteOrder.nativeOrder());
-            imgData.rewind();
-            //imgData.clear();
-            for (int i = 0; i < inputSize; ++i) {
-                for (int j = 0; j < inputSize; ++j) {
-                    int pixelValue = intValues[i * inputSize + j];
-                    if (isModelQuantized) {
-                        // Quantized model
-                        imgData.put((byte) ((pixelValue >> 16) & 0xFF));
-                        imgData.put((byte) ((pixelValue >> 8) & 0xFF));
-                        imgData.put((byte) (pixelValue & 0xFF));
-                    } else { // Float model
-//                        imgData.putFloat(0);
-//                        imgData.putFloat(0);
-//                        imgData.putFloat(0);
-                        float r = (((pixelValue >> 16) & 0xFF)) / 255.0f;
-                        float g = (((pixelValue >> 8) & 0xFF)) / 255.0f;
-                        float b = ((pixelValue & 0xFF)) / 255.0f;
-                        imgData.putFloat(r);
-                        imgData.putFloat(g);
-                        imgData.putFloat(b);
-//                        float a = (((pixelValue >> 16) & 0xFF)) / 255.0f;
-                        //imgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                        //imgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
-                        //imgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+        //run inference in background
+        this.handlerThread = new HandlerThread("inference");
+        this.handlerThread.start();
+        this.handler = new Handler(this.handlerThread.getLooper());
+        ProgressBar pbar = (ProgressBar)findViewById(R.id.progressBar);
+        File[] process_files = this.process_files;
+        pbar.setProgress(0);
+        ArrayList<HashMap<String, Object>> resList = new ArrayList<>();
+        runInBackground(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            for(int i = 0; i < process_files.length; i++){
+                                if (handler_stop_request) break;
+                                File file = process_files[i];
+                                InputStream is = new FileInputStream(file);
+                                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                                Bitmap resized = TfliteRunner.getResizedImage(bitmap, inputSize);
+                                runner.setInput(resized);
+                                float[][] bboxes = runner.runInference();
+                                Bitmap resBitmap = ImageProcess.drawBboxes(bboxes, resized);
+                                ArrayList<HashMap<String, Object>> bboxmaps = bboxesToMap(file, bboxes, bitmap.getHeight(), bitmap.getWidth());
+                                resList.addAll(bboxmaps);
+                                int ii = i;
+                                runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run () {
+                                                pbar.setProgress(Math.min(100, (ii+1) * 100 / process_files.length));
+                                                setResultImage(resBitmap);
+                                            }
+                                });
+                                bitmap.recycle();
+                            }
+                        } catch (Exception e) {
+                            runOnUiThread(
+                                    new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            showErrorDialog("Inference failed : " + e.getMessage()) ;
+                                        }
+                                    }
+                            );
+                        }
+                        //completed
+                        runOnUiThread(
+                                new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        handler_stop_request = false;
+                                        button.setText("Run Inference");
+                                        //output json if directory mode
+                                        if (process_files.length > 1) {
+                                            try {
+                                                String jsonpath = saveBboxesToJson(resList, process_files[0], "result.json");
+                                                showInfoDialog("result json is saved : " + jsonpath);
+                                            } catch (Exception e){
+                                                showErrorDialog("json output failed : " + e.getMessage());
+                                            }
+                                        }
+                                    }
+                                }
+                        );
                     }
                 }
-            }
-            Object[] inputArray = {imgData};
-            Map<Integer, Object> outputMap = new HashMap<>();
-            //outputMap.put(0, result.out);
-            if (isModelQuantized) {
-                outputMap.put(0, resultInt.out1);
-                outputMap.put(1, resultInt.out3);
-                outputMap.put(2, resultInt.out2);
-            } else {
-                outputMap.put(0, result.out1);
-                outputMap.put(1, result.out2);
-                outputMap.put(2, result.out3);
-            }
+        );
 
-            addLog(this.inferenceMode);
-            long start = System.currentTimeMillis();
-            this.tfliteInterpreter.runForMultipleInputsOutputs(inputArray, outputMap);
-            long end = System.currentTimeMillis();
-            int elapsed = (int)(end - start);
-            addLog("inference "  + String.valueOf(elapsed) + "[ms]");
-            start = System.currentTimeMillis();
-            if (this.quantizeMode){
-                addLog("postprocess for int8 is not implemented yet.");
-                return result;
-            }
-            float[][] bboxes = new float[1][6];//postprocess(result.out1, result.out2, result.out3);
-            String[] class_names = new String[]{"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
-            for (int i = 0; i < bboxes.length; i++){
-                int x1 = (int) bboxes[i][0];
-                int y1 = (int) bboxes[i][1];
-                int x2 = (int) bboxes[i][2];
-                int y2 = (int) bboxes[i][3];
-                float conf = bboxes[i][4];
-                int class_idx = (int)bboxes[i][5]; //TODO: validation
-                String class_name = class_names[class_idx];
-                String line = class_name + " " + String.valueOf(x1) + " " + String.valueOf(y1) + " " + String.valueOf(x2) + " " +String.valueOf(y2) + " " + String.valueOf(conf);
-                addLog(line);
-            }
-            end = System.currentTimeMillis();
-            elapsed =(int)(end - start);
-            addLog("preprocess(JNI) " + String.valueOf(elapsed) + "[ms]");
-            //TODO: not good for memory
-            Bitmap mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-            bitmap.recycle();
-            final Canvas canvas = new Canvas(mutableBitmap);
-            final Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(3.0f);
-            for (int i = 0; i < bboxes.length; i++) {
-                int x1 = (int) bboxes[i][0];
-                int y1 = (int) bboxes[i][1];
-                int x2 = (int) bboxes[i][2];
-                int y2 = (int) bboxes[i][3];
-                RectF location = new RectF(x1, y1, x2, y2);
-                canvas.drawRect(location, paint);
-            }
-            imageview.setImageBitmap(mutableBitmap);
-        }catch(Exception ex){
-            addLog(ex.getMessage());
-        }
-        return result;
     }
-    private Uri modelfile;
+    String saveBboxesToJson(ArrayList<HashMap<String, Object>> resList, File file, String output_filename)
+            throws org.json.JSONException, IOException{
+//        HashMap<String, Object>[] resArr = (HashMap<String, Object>[])resList.toArray();
+        JSONArray jarr = new JSONArray(resList);
+        String jstr = jarr.toString();
+
+        String filepath = file.getParent() + "/" + output_filename;
+        FileOutputStream fileOutputStream = new FileOutputStream(filepath, false);
+        fileOutputStream.write(jstr.getBytes());
+        return filepath;
+    }
+    private void showErrorDialog(String text){ showDialog("Error", text);}
+    private void showInfoDialog(String text){ showDialog("Info", text);}
+    private void showDialog(String title, String text){
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(text)
+                .setPositiveButton("OK" , null )
+                .create().show();
+    }
+    private void addLog(String logtxt){
+        TextView logtext = findViewById(R.id.logTextView);
+        logtext.setText(logtext.getText() + logtxt + "\n");
+    }
+    private void setOneLineLog(String text){
+        TextView onelinetextview = findViewById(R.id.oneLineLabel);
+        onelinetextview.setText(text);
+    }
+    public void OnClearLogButton(View view) {
+        TextView logtext = findViewById(R.id.logTextView);
+        logtext.setText("");
+    }
+    void setImageView(Bitmap bitmap){
+        ImageView imageview = (ImageView)findViewById(R.id.resultImageView);
+        imageview.setImageBitmap(bitmap);
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        // File load
         if (requestCode == REQUEST_OPEN_FILE) {
+            // one image file is selected
             if (resultCode == RESULT_OK && data != null) {
                 Uri uri = data.getData();
                 if (uri != null) {
-                    this.modelfile = uri;
-                    loadModel(this.modelfile);
+                    String fullpath = PathUtils.getPath(getApplicationContext(), uri);
+                    this.process_files = new File[]{new File(fullpath)};
                 }
             }
         } else if (requestCode == REQUEST_OPEN_DIRECTORY) {
+            // image directory is selected
             if (resultCode == RESULT_OK && data != null) {
                 Uri uri = data.getData();
                 if (uri != null) {
-                    loadDirectory(uri);
+                    Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri,
+                            DocumentsContract.getTreeDocumentId(uri));
+                    String fullpath = PathUtils.getPath(getApplicationContext(), docUri);
+                    File directory = new File(fullpath);
+                    this.process_files = directory.listFiles(new ImageFilenameFIlter());
                 }
             }
+        }
+        if (this.process_files != null && this.process_files.length > 0){
+            setOneLineLog(String.valueOf(this.process_files.length) + " images loaded.");
+            try{
+                InputStream is = new FileInputStream(this.process_files[0]);
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                Bitmap resized = TfliteRunner.getResizedImage(bitmap, this.inputSize);
+                setResultImage(resized);
+            } catch(Exception ex){
+                setOneLineLog(ex.getMessage());
+            }
+        }
+    }
+    class ImageFilenameFIlter implements FilenameFilter {
+        public boolean accept(File dir, String name) {
+            if (name.toLowerCase().matches(".*\\.jpg$|.*\\.jpeg$|.*\\.png$|.*\\.bmp$")) {
+                return true;
+            }
+            return false;
+        }
+    }
+    protected synchronized void runInBackground(final Runnable r) {
+        if (this.handler != null) {
+            this.handler.post(r);
+        }
+    }
+    private TfliteRunMode.Mode getRunModeFromGUI(){
+        boolean model_float = ((RadioButton)findViewById(R.id.radioButton_modelFloat)).isChecked();
+        boolean model_int8 = ((RadioButton)findViewById(R.id.radioButton_modelInt)).isChecked();
+        boolean precision_fp32 = ((RadioButton)findViewById(R.id.radioButton_runFP32)).isChecked();
+        boolean precision_fp16 = ((RadioButton)findViewById(R.id.radioButton_runFP16)).isChecked();
+        boolean precision_int8 = ((RadioButton)findViewById(R.id.radioButton_runInt8)).isChecked();
+        boolean delegate_none = ((RadioButton)findViewById(R.id.radioButton_delegateNone)).isChecked();
+        boolean delegate_nnapi = ((RadioButton)findViewById(R.id.radioButton_delegateNNAPI)).isChecked();
+        boolean[] gui_selected = {model_float, model_int8, precision_fp32, precision_fp16, precision_int8, delegate_none, delegate_nnapi};
+        final Map<TfliteRunMode.Mode, boolean[]> candidates = new HashMap<TfliteRunMode.Mode, boolean[]>(){{
+            put(TfliteRunMode.Mode.NONE_FP32,      new boolean[]{true, false, true, false, false, true, false});
+            put(TfliteRunMode.Mode.NONE_FP16,      new boolean[]{true, false, false, true, false, true, false});
+            put(TfliteRunMode.Mode.NNAPI_GPU_FP32, new boolean[]{true, false, true, false, false, false, true});
+            put(TfliteRunMode.Mode.NNAPI_GPU_FP16, new boolean[]{true, false, false, true, false, false, true});
+            put(TfliteRunMode.Mode.NONE_INT8,      new boolean[]{false, true, false, false, true, true, false});
+            put(TfliteRunMode.Mode.NNAPI_DSP_INT8, new boolean[]{false, true, false, false, true, false, true});
+        }};
+        for(Map.Entry<TfliteRunMode.Mode, boolean[]> entry : candidates.entrySet()){
+            if (Arrays.equals(gui_selected, entry.getValue())) return entry.getKey();
+        }
+        //not found
+        return null;
+    }
+    public int getInputSizeFromGUI(){
+        RadioButton input_640 = findViewById(R.id.radioButton_640);
+        if (input_640.isChecked()) return 640;
+        else return 320;
+    }
+    //Eliminate infeasible run configurations(model, precision)
+    public void onModelFloatClick(View view) {
+        RadioButton precision_int8 = findViewById(R.id.radioButton_runInt8);
+        if (precision_int8.isChecked()){
+            RadioButton precision_fp32 = findViewById(R.id.radioButton_runFP32);
+            precision_fp32.setChecked(true);
+        }
+    }
+    public void onModelIntClick(View view) {
+        RadioButton precision_fp32 = findViewById(R.id.radioButton_runFP32);
+        RadioButton precision_fp16 = findViewById(R.id.radioButton_runFP16);
+        if (precision_fp32.isChecked() || precision_fp16.isChecked()){
+            RadioButton precision_int8 = findViewById(R.id.radioButton_runInt8);
+            precision_int8.setChecked(true);
+        }
+    }
+    public void onPrecisionFPClick(View view){
+        RadioButton model_int = findViewById(R.id.radioButton_modelInt);
+        if (model_int.isChecked()) {
+            RadioButton model_fp = findViewById(R.id.radioButton_modelFloat);
+            model_fp.setChecked(true);
+        }
+    }
+    public void onPrecisionIntClick(View view){
+        RadioButton model_fp = findViewById(R.id.radioButton_modelFloat);
+        if (model_fp.isChecked()) {
+            RadioButton model_int = findViewById(R.id.radioButton_modelInt);
+            model_int.setChecked(true);
         }
     }
 }
