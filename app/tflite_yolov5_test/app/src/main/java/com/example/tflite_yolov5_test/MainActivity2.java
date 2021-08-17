@@ -272,7 +272,6 @@ public class MainActivity2 extends AppCompatActivity {
                                 new Runnable() {
                                     @Override
                                     public void run() {
-                                        handlerThread.quitSafely();
                                         handler_stop_request = false;
                                         button.setText("Run Inference");
                                         //output json if directory mode
