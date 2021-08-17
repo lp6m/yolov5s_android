@@ -323,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
             try{
                 InputStream is = new FileInputStream(this.process_files[0]);
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
-                Bitmap resized = TfliteRunner.getResizedImage(bitmap, this.inputSize);
+                Bitmap resized = TfliteRunner.getResizedImage(bitmap, getInputSizeFromGUI());
                 setResultImage(resized);
             } catch(Exception ex){
                 setOneLineLog(ex.getMessage());
