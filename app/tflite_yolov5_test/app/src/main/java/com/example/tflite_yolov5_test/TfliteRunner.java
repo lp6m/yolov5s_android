@@ -5,6 +5,7 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.RectF;
 import android.widget.ImageView;
 
 import org.tensorflow.lite.Interpreter;
@@ -20,7 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.example.tflite_yolov5_test.TfliteRunMode.*;
 
@@ -142,17 +145,22 @@ public class TfliteRunner {
         outputMap.put(1, this.rawres.out2);
         outputMap.put(2, this.rawres.out3);
     }
-    public float[][] runInference(){
-        //return: float[bbox_num][6]
-        //                       (x1, y1, x2, y2, conf, class_idx)
+    public List<Recognition> runInference(){
+        List<Recognition> bboxes = new ArrayList<>();
         long start = System.currentTimeMillis();
         this.tfliteInterpreter.runForMultipleInputsOutputs(inputArray, outputMap);
         long end = System.currentTimeMillis();
         int elapsed = (int)(end - start);
-        float[][] bboxes = postprocess(this.rawres.out1,
+
+        //float[bbox_num][6]
+        //                       (x1, y1, x2, y2, conf, class_idx)
+        float[][] bbox_arrs = postprocess(this.rawres.out1,
                 this.rawres.out2,
                 this.rawres.out3,
                 this.inputSize);
+        for(float[] bbox_arr: bbox_arrs){
+            bboxes.add(new Recognition(bbox_arr));
+        }
         return bboxes;
     }
     static int[] coco80_to_91class_map = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
@@ -161,5 +169,85 @@ public class TfliteRunner {
     static public int get_coco91_from_coco80(int idx){
         //assume idx < 80
         return coco80_to_91class_map[idx];
+    }
+    //port from TfLite Object Detection example
+    /** An immutable result returned by a Detector describing what was recognized. */
+    public class Recognition {
+        private final String[] coco_class_names = new String[]{"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+        private final Integer class_idx;
+        /**
+         * A unique identifier for what has been recognized. Specific to the class, not the instance of
+         * the object.
+         */
+        //private final String id;
+
+        /** Display name for the recognition. */
+        private final String title;
+
+        /**
+         * A sortable score for how good the recognition is relative to others. Higher should be better.
+         */
+        private final Float confidence;
+
+        /** Optional location within the source image for the location of the recognized object. */
+        private RectF location;
+
+        public Recognition(
+                float[] bbox_array) {
+            float x1 = bbox_array[0];
+            float y1 = bbox_array[1];
+            float x2 = bbox_array[2];
+            float y2 = bbox_array[3];
+            //this.id = (int)bbox_array[5];
+            int class_id = (int)bbox_array[5];
+            this.class_idx = class_id;
+            this.title = coco_class_names[class_id];
+            this.confidence = bbox_array[4];
+            this.location = new RectF(x1, y1, x2, y2);
+        }
+        public Integer getClass_idx(){
+            return class_idx;
+        }
+        /*public String getId() {
+            return id;
+        }*/
+
+        public String getTitle() {
+            return title;
+        }
+
+        public Float getConfidence() {
+            return confidence;
+        }
+
+        public RectF getLocation() {
+            return new RectF(location);
+        }
+
+        public void setLocation(RectF location) {
+            this.location = location;
+        }
+
+        @Override
+        public String toString() {
+            String resultString = "";
+            /*if (id != null) {
+                resultString += "[" + id + "] ";
+            }*/
+
+            if (title != null) {
+                resultString += title + " ";
+            }
+
+            if (confidence != null) {
+                resultString += String.format("(%.1f%%) ", confidence * 100.0f);
+            }
+
+            if (location != null) {
+                resultString += location + " ";
+            }
+
+            return resultString.trim();
+        }
     }
 }

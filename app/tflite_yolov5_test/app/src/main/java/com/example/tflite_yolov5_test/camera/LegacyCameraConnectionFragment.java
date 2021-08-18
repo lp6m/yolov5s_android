@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.example.tflite_yolov5_test.R;
 import com.example.tflite_yolov5_test.customview.AutoFitTextureView;
+import com.example.tflite_yolov5_test.camera.env.ImageUtils;
 
 public class LegacyCameraConnectionFragment extends Fragment {
     /** Conversion from screen rotation to JPEG orientation. */

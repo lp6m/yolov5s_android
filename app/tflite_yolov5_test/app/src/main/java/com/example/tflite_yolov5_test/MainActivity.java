@@ -1,6 +1,7 @@
 package com.example.tflite_yolov5_test;
 
 import android.content.Context;
+import android.graphics.RectF;
 import android.os.Bundle;
 
 import com.example.tflite_yolov5_test.camera.DetectorActivity;
@@ -39,6 +40,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import android.graphics.Bitmap;
@@ -110,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView imageview = (ImageView)findViewById(R.id.resultImageView);
         imageview.setImageBitmap(bitmap);
     }
-    ArrayList<HashMap<String, Object>> bboxesToMap(File file, float[][] bboxes, int orig_h, int orig_w){
+    ArrayList<HashMap<String, Object>> bboxesToMap(File file, List<TfliteRunner.Recognition> bboxes, int orig_h, int orig_w){
         ArrayList<HashMap<String, Object>> resList = new ArrayList<HashMap<String, Object>>();
         String basename = file.getName();
         basename = basename.substring(0, basename.lastIndexOf('.'));
@@ -120,18 +122,19 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e){
             image_id = basename;
         }
-        for(float[] bbox : bboxes){
+        for(TfliteRunner.Recognition bbox : bboxes){
             //clamp and scale to original image size
-            float x1 = Math.min(Math.max(0, bbox[0]), this.inputSize) * orig_w / (float)this.inputSize;
-            float y1 = Math.min(Math.max(0, bbox[1]), this.inputSize) * orig_h / (float)this.inputSize;
-            float x2 = Math.min(Math.max(0, bbox[2]), this.inputSize) * orig_w / (float)this.inputSize;
-            float y2 = Math.min(Math.max(0, bbox[3]), this.inputSize) * orig_h / (float)this.inputSize;
+            RectF location = bbox.getLocation();
+            float x1 = Math.min(Math.max(0, location.left), this.inputSize) * orig_w / (float)this.inputSize;
+            float y1 = Math.min(Math.max(0, location.top), this.inputSize) * orig_h / (float)this.inputSize;
+            float x2 = Math.min(Math.max(0, location.right), this.inputSize) * orig_w / (float)this.inputSize;
+            float y2 = Math.min(Math.max(0, location.bottom), this.inputSize) * orig_h / (float)this.inputSize;
             float x = x1;
             float y = y1;
             float w = x2 - x1;
             float h = y2 - y1;
-            float conf = bbox[4];
-            int class_idx = TfliteRunner.get_coco91_from_coco80((int)bbox[5]);
+            float conf = bbox.getConfidence();
+            int class_idx = TfliteRunner.get_coco91_from_coco80(bbox.getClass_idx());
             HashMap<String, Object> mapbox = new HashMap<>();
             mapbox.put("image_id", image_id);
             mapbox.put("bbox", new float[]{x, y, w, h});
@@ -204,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                                 Bitmap bitmap = BitmapFactory.decodeStream(is);
                                 Bitmap resized = TfliteRunner.getResizedImage(bitmap, inputSize);
                                 runner.setInput(resized);
-                                float[][] bboxes = runner.runInference();
+                                List<TfliteRunner.Recognition> bboxes = runner.runInference();
                                 Bitmap resBitmap = ImageProcess.drawBboxes(bboxes, resized);
                                 ArrayList<HashMap<String, Object>> bboxmaps = bboxesToMap(file, bboxes, bitmap.getHeight(), bitmap.getWidth());
                                 resList.addAll(bboxmaps);

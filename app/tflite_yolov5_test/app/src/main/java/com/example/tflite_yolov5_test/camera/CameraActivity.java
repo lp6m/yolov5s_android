@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
 import android.util.Size;
+import android.view.Surface;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
@@ -29,7 +30,7 @@ import android.widget.Toast;
 
 import com.example.tflite_yolov5_test.R;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
-
+import com.example.tflite_yolov5_test.camera.env.ImageUtils;
 import java.nio.ByteBuffer;
 
 public abstract class CameraActivity extends AppCompatActivity
@@ -114,6 +115,18 @@ public abstract class CameraActivity extends AppCompatActivity
                 yuvBytes[i] = new byte[buffer.capacity()];
             }
             buffer.get(yuvBytes[i]);
+        }
+    }
+    protected int getScreenOrientation() {
+        switch (getWindowManager().getDefaultDisplay().getRotation()) {
+            case Surface.ROTATION_270:
+                return 270;
+            case Surface.ROTATION_180:
+                return 180;
+            case Surface.ROTATION_90:
+                return 90;
+            default:
+                return 0;
         }
     }
     /** Callback for android.hardware.Camera API */
@@ -223,6 +236,32 @@ public abstract class CameraActivity extends AppCompatActivity
             threadsTextView.setText(String.valueOf(numThreads));
             setNumThreads(numThreads);
         }*/
+    }
+    @Override
+    public synchronized void onResume() {
+        super.onResume();
+
+        handlerThread = new HandlerThread("inference");
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+    }
+
+    @Override
+    public synchronized void onPause() {
+        handlerThread.quitSafely();
+        try {
+            handlerThread.join();
+            handlerThread = null;
+            handler = null;
+        } catch (final InterruptedException e) {
+        }
+
+        super.onPause();
+    }
+    protected synchronized void runInBackground(final Runnable r) {
+        if (handler != null) {
+            handler.post(r);
+        }
     }
     protected int[] getRgbBytes() {
         imageConverter.run();

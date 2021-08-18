@@ -2,27 +2,63 @@ package com.example.tflite_yolov5_test.camera;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.media.ImageReader;
+import android.os.SystemClock;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.widget.Toast;
 
 import com.example.tflite_yolov5_test.R;
+import com.example.tflite_yolov5_test.camera.env.BorderedText;
+import com.example.tflite_yolov5_test.camera.env.ImageUtils;
+import com.example.tflite_yolov5_test.camera.tracker.MultiBoxTracker;
 import com.example.tflite_yolov5_test.customview.OverlayView;
+import com.example.tflite_yolov5_test.TfliteRunner;
+import com.example.tflite_yolov5_test.TfliteRunMode;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DetectorActivity extends CameraActivity implements ImageReader.OnImageAvailableListener {
 
+
+    private static final int TF_OD_API_INPUT_SIZE = 320;
+    private static final boolean TF_OD_API_IS_QUANTIZED = true;
+    private static final String TF_OD_API_MODEL_FILE = "detect.tflite";
+    private static final String TF_OD_API_LABELS_FILE = "labelmap.txt";
+    private static final TfliteRunMode.Mode MODE = TfliteRunMode.Mode.NONE_INT8;
+    // Minimum detection confidence to track a detection.
+    private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.5f;
+    private static final boolean MAINTAIN_ASPECT = false;
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
+    private static final boolean SAVE_PREVIEW_BITMAP = false;
+    private static final float TEXT_SIZE_DIP = 10;
+    OverlayView trackingOverlay;
+    private Integer sensorOrientation;
+
+    private TfliteRunner detector;
+
+    private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
-    OverlayView trackingOverlay;
 
-    private static final int TF_OD_API_INPUT_SIZE = 300;
     private boolean computingDetection = false;
+
+    private long timestamp = 0;
+
     private Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
-    private static final float TEXT_SIZE_DIP = 10;
+
+    private MultiBoxTracker tracker;
+
+    private BorderedText borderedText;
 
     protected Size getDesiredPreviewFrameSize() {
         return DESIRED_PREVIEW_SIZE;
@@ -56,30 +92,51 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
         final float textSizePx =
                 TypedValue.applyDimension(
                         TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
-        //borderedText = new BorderedText(textSizePx);
-        //borderedText.setTypeface(Typeface.MONOSPACE);
+        borderedText = new BorderedText(textSizePx);
+        borderedText.setTypeface(Typeface.MONOSPACE);
 
-        //tracker = new MultiBoxTracker(this);
+        tracker = new MultiBoxTracker(this);
 
         int cropSize = TF_OD_API_INPUT_SIZE;
 
-//        try {
-//            detector =
-//                    TFLiteObjectDetectionAPIModel.create(
-//                            this,
-//                            TF_OD_API_MODEL_FILE,
-//                            TF_OD_API_LABELS_FILE,
-//                            TF_OD_API_INPUT_SIZE,
-//                            TF_OD_API_IS_QUANTIZED);
+        try {
+            detector = new TfliteRunner(this, MODE, TF_OD_API_INPUT_SIZE);
             cropSize = TF_OD_API_INPUT_SIZE;
-//        } catch (final IOException e) {
-//            e.printStackTrace();
-//            Toast toast =
-//                    Toast.makeText(
-//                            getApplicationContext(), "Detector could not be initialized", Toast.LENGTH_SHORT);
-//            toast.show();
-//            finish();
-//        }
+        } catch (final Exception e) {
+            e.printStackTrace();
+            Toast toast =
+                    Toast.makeText(
+                            getApplicationContext(), "Detector could not be initialized", Toast.LENGTH_SHORT);
+            toast.show();
+            finish();
+        }
+
+        previewWidth = size.getWidth();
+        previewHeight = size.getHeight();
+        int a = getScreenOrientation();
+        sensorOrientation = rotation - getScreenOrientation();
+        rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
+        croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
+
+        frameToCropTransform =
+                ImageUtils.getTransformationMatrix(
+                        previewWidth, previewHeight,
+                        cropSize, cropSize,
+                        sensorOrientation, MAINTAIN_ASPECT);
+
+        cropToFrameTransform = new Matrix();
+        frameToCropTransform.invert(cropToFrameTransform);
+
+        trackingOverlay = (OverlayView) findViewById(R.id.tracking_overlay);
+        trackingOverlay.addCallback(
+                new OverlayView.DrawCallback() {
+                    @Override
+                    public void drawCallback(final Canvas canvas) {
+                        tracker.draw(canvas);
+                    }
+                });
+
+        tracker.setFrameConfiguration(getDesiredPreviewFrameSize(), TF_OD_API_INPUT_SIZE, sensorOrientation);
     }
     @Override
     protected void processImage() {
@@ -99,13 +156,14 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
 
-        /*runInBackground(
+        runInBackground(
                 new Runnable() {
                     @Override
                     public void run() {
-                        LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
-                        final List<Detector.Recognition> results = detector.recognizeImage(croppedBitmap);
+                        //ImageUtils.saveBitmap(croppedBitmap);
+                        detector.setInput(croppedBitmap);
+                        final List<TfliteRunner.Recognition> results = detector.runInference();
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -115,29 +173,12 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
                         paint.setStyle(Paint.Style.STROKE);
                         paint.setStrokeWidth(2.0f);
 
-                        float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                        switch (MODE) {
-                            case TF_OD_API:
-                                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                                break;
-                        }
-
-                        final List<Detector.Recognition> mappedRecognitions =
-                                new ArrayList<Detector.Recognition>();
-
-                        for (final Detector.Recognition result : results) {
+                        for (final TfliteRunner.Recognition result : results) {
                             final RectF location = result.getLocation();
-                            if (location != null && result.getConfidence() >= minimumConfidence) {
-                                canvas.drawRect(location, paint);
-
-                                cropToFrameTransform.mapRect(location);
-
-                                result.setLocation(location);
-                                mappedRecognitions.add(result);
-                            }
+                            //canvas.drawRect(location, paint);
                         }
 
-                        tracker.trackResults(mappedRecognitions, currTimestamp);
+                        tracker.trackResults(results);
                         trackingOverlay.postInvalidate();
 
                         computingDetection = false;
@@ -146,13 +187,13 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
                                 new Runnable() {
                                     @Override
                                     public void run() {
-                                        showFrameInfo(previewWidth + "x" + previewHeight);
-                                        showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
-                                        showInference(lastProcessingTimeMs + "ms");
+                                        //showFrameInfo(previewWidth + "x" + previewHeight);
+                                        //showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
+                                        //showInference(lastProcessingTimeMs + "ms");
                                     }
                                 });
                     }
-                });*/
+                });
     }
 
 }
