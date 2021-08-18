@@ -5,14 +5,8 @@ import android.graphics.RectF;
 import android.os.Bundle;
 
 import com.example.tflite_yolov5_test.camera.DetectorActivity;
-import com.example.tflite_yolov5_test.camera.ImageProcess;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -211,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
                                 Bitmap resized = TfliteRunner.getResizedImage(bitmap, inputSize);
                                 runner.setInput(resized);
                                 List<TfliteRunner.Recognition> bboxes = runner.runInference();
-                                Bitmap resBitmap = ImageProcess.drawBboxes(bboxes, resized);
+                                Bitmap resBitmap = ImageProcess.drawBboxes(bboxes, bitmap, getInputSizeFromGUI());
                                 ArrayList<HashMap<String, Object>> bboxmaps = bboxesToMap(file, bboxes, bitmap.getHeight(), bitmap.getWidth());
                                 resList.addAll(bboxmaps);
                                 int ii = i;
@@ -333,8 +327,7 @@ public class MainActivity extends AppCompatActivity {
             try{
                 InputStream is = new FileInputStream(this.process_files[0]);
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
-                Bitmap resized = TfliteRunner.getResizedImage(bitmap, getInputSizeFromGUI());
-                setResultImage(resized);
+                setResultImage(bitmap);
             } catch(Exception ex){
                 setOneLineLog(ex.getMessage());
             }
