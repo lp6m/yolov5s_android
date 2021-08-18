@@ -38,7 +38,6 @@ public class TfliteRunner {
     Mode runmode;
     int inputSize;
     class InferenceRawResult{
-        public int elapsed;
         public float[][][][] out1;
         public float[][][][] out2;
         public float[][][][] out3;
@@ -145,12 +144,17 @@ public class TfliteRunner {
         outputMap.put(1, this.rawres.out2);
         outputMap.put(2, this.rawres.out3);
     }
+    private int inference_elapsed;
+    private int postprocess_elapsed;
+    public String getLastElapsedTimeLog() {
+        return String.format("inference: %dms postprocess: %dms", this.inference_elapsed, this.postprocess_elapsed);
+    }
     public List<Recognition> runInference(){
         List<Recognition> bboxes = new ArrayList<>();
         long start = System.currentTimeMillis();
         this.tfliteInterpreter.runForMultipleInputsOutputs(inputArray, outputMap);
         long end = System.currentTimeMillis();
-        int elapsed = (int)(end - start);
+        this.inference_elapsed = (int)(end - start);
 
         //float[bbox_num][6]
         //                       (x1, y1, x2, y2, conf, class_idx)
@@ -158,6 +162,8 @@ public class TfliteRunner {
                 this.rawres.out2,
                 this.rawres.out3,
                 this.inputSize);
+        long end2 = System.currentTimeMillis();
+        this.postprocess_elapsed = (int)(end2 - end);
         for(float[] bbox_arr: bbox_arrs){
             bboxes.add(new Recognition(bbox_arr));
         }

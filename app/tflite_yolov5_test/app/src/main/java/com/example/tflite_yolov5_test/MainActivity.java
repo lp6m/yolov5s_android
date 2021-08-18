@@ -245,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
                                                 showErrorDialog("json output failed : " + e.getMessage());
                                             }
                                         }
+                                        addLog(runner.getLastElapsedTimeLog());
                                     }
                                 }
                         );
