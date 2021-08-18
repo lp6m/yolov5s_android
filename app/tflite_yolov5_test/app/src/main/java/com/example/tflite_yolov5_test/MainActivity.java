@@ -144,6 +144,9 @@ public class MainActivity extends AppCompatActivity {
         }
         return resList;
     }
+    private boolean isBackgroundTaskRunning() {
+        return this.handlerThread != null && this.handlerThread.isAlive();
+    }
     public void OnRunInferenceButtonClick(View view){
         Button button = (Button)findViewById(R.id.runInferenceButton);
         TfliteRunner runner;
@@ -168,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         //check background task status
-        if(this.handlerThread != null && this.handlerThread.isAlive()){
+        if(isBackgroundTaskRunning()){
             //already inference is running, stop inference
             this.handler_stop_request = true;
             this.handlerThread.quitSafely();
@@ -293,6 +296,10 @@ public class MainActivity extends AppCompatActivity {
         imageview.setImageBitmap(bitmap);
     }
     public void OnOpenCameraButtonClick(View view){
+        if (isBackgroundTaskRunning()) {
+            showErrorDialog("Please stop inference task");
+            return;
+        }
         Intent intent = new Intent(MainActivity.this, DetectorActivity.class);
         startActivity(intent);
     }
