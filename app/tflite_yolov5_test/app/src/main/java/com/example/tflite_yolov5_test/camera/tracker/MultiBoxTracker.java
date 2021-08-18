@@ -132,7 +132,6 @@ public class MultiBoxTracker {
             float y1 = recognition.location.top * scale_height;
             float x2 = recognition.location.right * scale_width;
             float y2 = recognition.location.bottom * scale_height;
-            Log.d("unko", "canvas_height" + String.valueOf(canvas.getWidth()));
 
             final RectF trackedPos = new RectF(x1, y1, x2, y2);
             boxPaint.setColor(recognition.color);
