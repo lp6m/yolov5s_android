@@ -37,6 +37,7 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
     * The app can perform inference with various configurations of input size, inference accuracy, and model accuracy. 
     * For 'Open Directory Mode', save the detected bounding boxes results as a json file in coco format.
     * Realtime deteciton from camera image (precision and input size is fixed to int8/320). Achieved FPS is about **15FPS** on Mi11.
+    * **NOTE** Please select image/directory as an absolute path from 'Device'. The app does not support select image/directory from 'Recent' in some devices.
 - `./benchmark` 
     * Benchmark script and results by [TFLite Model Benchmark Tool with C++ Binary](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/tools/benchmark#profiling-model-operators).
 - `./convert_model`
