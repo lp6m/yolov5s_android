@@ -1,6 +1,7 @@
 # yolov5s_android:rocket: 
 <div align="center">
 <img src="https://github.com/lp6m/yolov5s_android/raw/media/android_app.gif" width=30%>
+<img src="https://github.com/lp6m/yolov5s_android/raw/media/screenshot.jpg" width=30%>
 </div>
 
 The implementation of yolov5s on android for the [yolov5s export contest](https://github.com/ultralytics/yolov5/discussions/3213).    
@@ -35,7 +36,7 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
     * To build application by yourself, copy `./tflite_model/*.tflite` to `app/tflite_yolov5_test/app/src/main/assets/`, and build on Android Studio.
     * The app can perform inference with various configurations of input size, inference accuracy, and model accuracy. 
     * For 'Open Directory Mode', save the detected bounding boxes results as a json file in coco format.
-    * [TODO] Realtime deteciton from camera image (precision and input size is fixed to int8/320)
+    * Realtime deteciton from camera image (precision and input size is fixed to int8/320). Achieved FPS is about **15FPS** on Mi11.
 - `./benchmark` 
     * Benchmark script and results by [TFLite Model Benchmark Tool with C++ Binary](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/tools/benchmark#profiling-model-operators).
 - `./convert_model`
@@ -51,7 +52,7 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
 ## Performance
 ### Latency (inference)
 These results are measured on `Xiaomi Mi11`.  
-Please refer [`benchmark/README.md`](https://github.com/lp6m/yolov5s_android/tree/dev/benchmark) about the detail of benchmark command.  
+Please refer [`benchmark/README.md`](https://github.com/lp6m/yolov5s_android/tree/master/benchmark) about the detail of benchmark command.  
 The latency does not contain the pre/post processing time and data transfer time.  
 #### float32 model  
 
@@ -71,7 +72,7 @@ We tried to accelerate the inference process by using `NNAPI (qti-dsp)` and offl
 | NNAPI  (qti-dsp)     |  Not working |  Not working |
 
 ## Accuracy
-Please refer [host/README.md](https://github.com/lp6m/yolov5s_android/tree/dev/host#example2) about the evaluation method.    
+Please refer [host/README.md](https://github.com/lp6m/yolov5s_android/tree/master/host#example2) about the evaluation method.    
 We set `conf_thresh=0.25` and `iou_thresh=0.45` for nms parameter.
 |      device, model, delegate      | 640x640 mAP | 320x320 mAP |
 | :-------------------------------- | ----------: | ----------: |
@@ -85,5 +86,5 @@ We set `conf_thresh=0.25` and `iou_thresh=0.45` for nms parameter.
 This project focuses on obtaining a tflite model by **model conversion from PyTorch original implementation, rather than doing own implementation in tflite**.  
 We convert models in this way: `PyTorch -> ONNX -> OpenVino -> TfLite`.  
 To convert the model from OpenVino to TfLite, we use [openvino2tensorflow](https://github.com/PINTO0309/openvino2tensorflow).
-Please refer [convert_model/README.md](https://github.com/lp6m/yolov5s_android/tree/dev/convert_model) about the model conversion.
+Please refer [convert_model/README.md](https://github.com/lp6m/yolov5s_android/tree/master/convert_model) about the model conversion.
 

@@ -48,8 +48,8 @@ The input of multiply layer in detect head layers has 5 dimension, so NNAPI dele
 We tried to include detect head layers into tflite [in other method](https://github.com/lp6m/yolov5s_android/issues/2), but not successful yet.
   
 For the inference, the calculation of detect head layers are implemented outside of the tflite model.  
-For Android, the detect head layer is [implemented in C++ and executed on the CPU through JNI](https://github.com/lp6m/yolov5s_android/blob/dev/app/tflite_yolov5_test/app/src/main/cpp/postprocess.cpp).  
-For host evaluation, we use [PyTorch model](https://github.com/lp6m/yolov5s_android/blob/dev/host/detector_head.py) ported from original yolov5 repository.
+For Android, the detect head layer is [implemented in C++ and executed on the CPU through JNI](https://github.com/lp6m/yolov5s_android/blob/host/app/tflite_yolov5_test/app/src/main/cpp/postprocess.cpp).  
+For host evaluation, we use [PyTorch model](https://github.com/lp6m/yolov5s_android/blob/host/host/detector_head.py) ported from original yolov5 repository.
 
 
 ## OpenVino -> TfLite
