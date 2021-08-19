@@ -41,7 +41,7 @@ netron yolov5s.onnx
   
 In this model, the output layer IDs are `Conv_245,Conv_325,Conv_405`.  
 **We convert the ONNX model without detect head layers.**
-### Why we exclude detect head layers?https://github.com/onnx/onnx-tensorflow
+### Why we exclude detect head layers?
 NNAPI does not support some layers included in detect head layers.  
 For example, The number of dimension supported by [ANEURALNETWORKS_MUL](https://developer.android.com/ndk/reference/group/neural-networks#group___neural_networks_1ggaabbe492c60331b13038e39d4207940e0ab34ca99890c827b536ce66256a803d7a) operator for multiply layer is up to 4.  
 The input of multiply layer in detect head layers has 5 dimension, so NNAPI delegate cannot load the model.  

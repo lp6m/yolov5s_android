@@ -50,7 +50,7 @@ docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
     * Converted TfLite Model.
 
 ## Performance
-### Latency (inference)
+### Latency 
 These results are measured on `Xiaomi Mi11`.  
 Please refer [`benchmark/README.md`](https://github.com/lp6m/yolov5s_android/tree/master/benchmark) about the detail of benchmark command.  
 The latency does not contain the pre/post processing time and data transfer time.  
