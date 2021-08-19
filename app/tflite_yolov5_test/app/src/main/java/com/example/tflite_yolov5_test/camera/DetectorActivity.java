@@ -12,6 +12,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.tflite_yolov5_test.R;
@@ -44,7 +45,7 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
 
     private TfliteRunner detector;
 
-    private long lastProcessingTimeMs;
+    private long lastProcessingTimeMs = 0;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
@@ -160,11 +161,14 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
                 new Runnable() {
                     @Override
                     public void run() {
-                        final long startTime = SystemClock.uptimeMillis();
+                        final long nowTime = SystemClock.uptimeMillis();
+                        float fps = (float)1000 / (float)(nowTime - lastProcessingTimeMs);
+                        lastProcessingTimeMs = nowTime;
+
+
                         //ImageUtils.saveBitmap(croppedBitmap);
                         detector.setInput(croppedBitmap);
                         final List<TfliteRunner.Recognition> results = detector.runInference();
-                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
                         final Canvas canvas = new Canvas(cropCopyBitmap);
@@ -187,9 +191,11 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
                                 new Runnable() {
                                     @Override
                                     public void run() {
-                                        //showFrameInfo(previewWidth + "x" + previewHeight);
-                                        //showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
-                                        //showInference(lastProcessingTimeMs + "ms");
+                                        TextView fpsTextView = (TextView)findViewById(R.id.textViewFPS);
+                                        String fpsText = String.format("FPS: %.2f", fps);
+                                        fpsTextView.setText(fpsText);
+                                        TextView latencyTextView = (TextView)findViewById(R.id.textViewLatency);
+                                        latencyTextView.setText(detector.getLastElapsedTimeLog());
                                     }
                                 });
                     }
