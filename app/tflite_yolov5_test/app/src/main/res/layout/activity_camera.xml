@@ -40,6 +40,31 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:text="Inference: xxms Postprocess: yyms" />
+
+        <TextView
+            android:id="@+id/conf_TextView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:text="Confidence Threshold" />
+
+        <SeekBar
+            android:id="@+id/conf_seekBar2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/iou_TextView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:text="IoU Threshold" />
+
+        <SeekBar
+            android:id="@+id/iou_seekBar2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

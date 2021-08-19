@@ -22,6 +22,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -88,6 +89,38 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        SeekBar conf_seekBar = (SeekBar)findViewById(R.id.conf_seekBar);
+        conf_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                TextView conf_textView = (TextView)findViewById(R.id.conf_TextView);
+                conf_textView.setText(String.format("Confidence Threshold: %.2f", (float)progress / 100));
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        conf_seekBar.setMax(100);
+        conf_seekBar.setProgress(25);//0.25
+        SeekBar iou_seekBar = (SeekBar)findViewById(R.id.iou_seekBar);
+        iou_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                TextView iou_textView = (TextView)findViewById(R.id.iou_TextView);
+                iou_textView.setText(String.format("IoU Threshold: %.2f", (float)progress / 100));
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        iou_seekBar.setMax(100);
+        iou_seekBar.setProgress(45);//0.45
     }
     public void OnOpenImageButtonClick(View view){
         checkPermission();
@@ -141,8 +174,25 @@ public class MainActivity extends AppCompatActivity {
     private boolean isBackgroundTaskRunning() {
         return this.handlerThread != null && this.handlerThread.isAlive();
     }
-    public void OnRunInferenceButtonClick(View view){
+    public void OnInferenceTaskCompleted() {
+        Button button = (Button) findViewById(R.id.runInferenceButton);
+        button.setText("Run Inference");
+        SeekBar conf_seekBar = (SeekBar) findViewById(R.id.conf_seekBar);
+        conf_seekBar.setEnabled(true);
+        SeekBar iou_seekBar = (SeekBar) findViewById(R.id.iou_seekBar);
+        iou_seekBar.setEnabled(true);
+    }
+    public void OnInferenceTaskStart(){
         Button button = (Button)findViewById(R.id.runInferenceButton);
+        button.setText("Stop Inference");
+        SeekBar conf_seekBar = (SeekBar) findViewById(R.id.conf_seekBar);
+        conf_seekBar.setEnabled(false);
+        SeekBar iou_seekBar = (SeekBar) findViewById(R.id.iou_seekBar);
+        iou_seekBar.setEnabled(false);
+    }
+    public float getConfThreshFromGUI(){ return ((float)((SeekBar)findViewById(R.id.conf_seekBar)).getProgress()) / 100.0f;}
+    public float getIoUThreshFromGUI(){ return ((float)((SeekBar)findViewById(R.id.iou_seekBar)).getProgress()) / 100.0f;}
+    public void OnRunInferenceButtonClick(View view){
         TfliteRunner runner;
         TfliteRunMode.Mode runmode = getRunModeFromGUI();
         this.inputSize = getInputSizeFromGUI();
@@ -159,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         //open model
         try {
             Context context = getApplicationContext();
-            runner = new TfliteRunner(context, runmode, this.inputSize);
+            runner = new TfliteRunner(context, runmode, this.inputSize, getConfThreshFromGUI(), getIoUThreshFromGUI());
         } catch (Exception e) {
             showErrorDialog("Model load failed: " + e.getMessage());
             return;
@@ -176,12 +226,12 @@ public class MainActivity extends AppCompatActivity {
             } catch (final InterruptedException e) {
                 addLog(e.getMessage() +  "Exception!");
             }
-            button.setText("Run Inference");
+            OnInferenceTaskCompleted();
             return;
         } else {
             //start inference task
             this.handler_stop_request = false;
-            button.setText("Stop Inference");
+            OnInferenceTaskStart();
         }
 
         //run inference in background
@@ -235,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public void run() {
                                         handler_stop_request = false;
-                                        button.setText("Run Inference");
+                                        OnInferenceTaskCompleted();
                                         //output json if directory mode
                                         if (process_files.length > 1) {
                                             try {

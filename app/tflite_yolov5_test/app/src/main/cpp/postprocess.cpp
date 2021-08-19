@@ -87,10 +87,10 @@ extern "C" jobjectArray Java_com_example_tflite_1yolov5_1test_TfliteRunner_postp
         jobjectArray input1,//80x80 or 40x40
         jobjectArray input2, //40x40 or 20x20,
         jobjectArray input3, //20x20 or 10x10
-        jint input_size){
+        jint input_size,
+        jfloat conf_thresh,
+        jfloat iou_thresh){
     //conf
-    const float conf_thresh = 0.25f;
-    const float iou_thresh = 0.45f;
     const int anchorgrids[3][3][2]  = {
         {{10, 13}, {16, 30}, {33, 23}}, //80
         {{30, 61}, {62, 45}, {59, 119}}, //40

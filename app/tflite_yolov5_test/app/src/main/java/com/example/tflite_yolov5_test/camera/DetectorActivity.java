@@ -8,10 +8,12 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,20 +70,54 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
     protected int getLayoutId() {
         return R.layout.tfe_od_camera_connection_fragment_tracking;
     }
+
+
+    public float getConfThreshFromGUI(){ return ((float)((SeekBar)findViewById(R.id.conf_seekBar2)).getProgress()) / 100.0f;}
+    public float getIoUThreshFromGUI(){ return ((float)((SeekBar)findViewById(R.id.iou_seekBar2)).getProgress()) / 100.0f;}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        SeekBar conf_seekBar = (SeekBar)findViewById(R.id.conf_seekBar2);
+        conf_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                TextView conf_textView = (TextView)findViewById(R.id.conf_TextView2);
+                float thresh = (float)progress / 100.0f;
+                conf_textView.setText(String.format("Confidence Threshold: %.2f", thresh));
+                if (detector != null) detector.setConfThresh(thresh);
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        conf_seekBar.setMax(100);
+        conf_seekBar.setProgress(25);//0.25
+        SeekBar iou_seekBar = (SeekBar)findViewById(R.id.iou_seekBar2);
+        iou_seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                TextView iou_textView = (TextView)findViewById(R.id.iou_TextView2);
+                float thresh = (float)progress / 100.0f;
+                iou_textView.setText(String.format("IoU Threshold: %.2f", thresh));
+                if (detector != null) detector.setIoUThresh(thresh);
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        iou_seekBar.setMax(100);
+        iou_seekBar.setProgress(45);//0.45
+    }
+
     @Override
     protected void setUseNNAPI(final boolean isChecked) {
-        /*runInBackground(
-                () -> {
-                    try {
-                        detector.setUseNNAPI(isChecked);
-                    } catch (UnsupportedOperationException e) {
-                        LOGGER.e(e, "Failed to set \"Use NNAPI\".");
-                        runOnUiThread(
-                                () -> {
-                                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-                                });
-                    }
-                });*/
+
     }
 
     @Override
@@ -101,7 +137,7 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
         int cropSize = TF_OD_API_INPUT_SIZE;
 
         try {
-            detector = new TfliteRunner(this, MODE, TF_OD_API_INPUT_SIZE);
+            detector = new TfliteRunner(this, MODE, TF_OD_API_INPUT_SIZE, 0.25f, 0.45f);
             cropSize = TF_OD_API_INPUT_SIZE;
         } catch (final Exception e) {
             e.printStackTrace();
@@ -139,6 +175,7 @@ public class DetectorActivity extends CameraActivity implements ImageReader.OnIm
 
         tracker.setFrameConfiguration(getDesiredPreviewFrameSize(), TF_OD_API_INPUT_SIZE, sensorOrientation);
     }
+
     @Override
     protected void processImage() {
         trackingOverlay.postInvalidate();

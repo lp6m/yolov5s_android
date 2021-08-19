@@ -33,7 +33,7 @@ public class TfliteRunner {
     static {
         System.loadLibrary("native-lib");
     }
-    public native float[][] postprocess(float[][][][] out1, float[][][][] out2, float[][][][] out3, int inputSize);
+    public native float[][] postprocess(float[][][][] out1, float[][][][] out2, float[][][][] out3, int inputSize, float conf_thresh, float iou_thresh);
     private Interpreter tfliteInterpreter;
     Mode runmode;
     int inputSize;
@@ -51,11 +51,15 @@ public class TfliteRunner {
     Object[] inputArray;
     Map<Integer, Object> outputMap;
     InferenceRawResult rawres;
+    float conf_thresh;
+    float iou_thresh;
 
-    public TfliteRunner(Context context, Mode runmode, int inputSize) throws Exception{
+    public TfliteRunner(Context context, Mode runmode, int inputSize, float conf_thresh, float iou_thresh) throws Exception{
         this.runmode = runmode;
         this.rawres = new InferenceRawResult(inputSize);
         this.inputSize = inputSize;
+        this.conf_thresh = conf_thresh;
+        this.iou_thresh = iou_thresh;
         loadModel(context, runmode, inputSize, 4);
     }
     private static MappedByteBuffer loadModelFile(AssetManager assets, String modelFilename)
@@ -161,7 +165,9 @@ public class TfliteRunner {
         float[][] bbox_arrs = postprocess(this.rawres.out1,
                 this.rawres.out2,
                 this.rawres.out3,
-                this.inputSize);
+                this.inputSize,
+                this.conf_thresh,
+                this.iou_thresh);
         long end2 = System.currentTimeMillis();
         this.postprocess_elapsed = (int)(end2 - end);
         for(float[] bbox_arr: bbox_arrs){
@@ -176,6 +182,9 @@ public class TfliteRunner {
         //assume idx < 80
         return coco80_to_91class_map[idx];
     }
+    public void setConfThresh(float thresh){ this.conf_thresh = thresh;}
+    public void setIoUThresh(float thresh) {this.iou_thresh = thresh;}
+
     //port from TfLite Object Detection example
     /** An immutable result returned by a Detector describing what was recognized. */
     public class Recognition {

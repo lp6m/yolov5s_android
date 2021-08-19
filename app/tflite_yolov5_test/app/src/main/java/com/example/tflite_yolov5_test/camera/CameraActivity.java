@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -72,6 +73,7 @@ public abstract class CameraActivity extends AppCompatActivity
         } else {
             requestPermission();
         }
+
     }
     private String chooseCamera() {
         final CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -211,31 +213,12 @@ public abstract class CameraActivity extends AppCompatActivity
         }
         Trace.endSection();
     }
+
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        setUseNNAPI(isChecked);
-        if (isChecked) apiSwitchCompat.setText("NNAPI");
-        else apiSwitchCompat.setText("TFLITE");
     }
     @Override
     public void onClick(View v) {
-        /*if (v.getId() == R.id.plus) {
-            String threads = threadsTextView.getText().toString().trim();
-            int numThreads = Integer.parseInt(threads);
-            if (numThreads >= 9) return;
-            numThreads++;
-            threadsTextView.setText(String.valueOf(numThreads));
-            setNumThreads(numThreads);
-        } else if (v.getId() == R.id.minus) {
-            String threads = threadsTextView.getText().toString().trim();
-            int numThreads = Integer.parseInt(threads);
-            if (numThreads == 1) {
-                return;
-            }
-            numThreads--;
-            threadsTextView.setText(String.valueOf(numThreads));
-            setNumThreads(numThreads);
-        }*/
     }
     @Override
     public synchronized void onResume() {

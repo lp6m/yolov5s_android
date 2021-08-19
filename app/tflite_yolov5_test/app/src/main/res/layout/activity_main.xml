@@ -248,6 +248,31 @@
                 android:text="Run inference" />
 
             <TextView
+                android:id="@+id/conf_TextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Confidence Threshold" />
+
+            <SeekBar
+                android:id="@+id/conf_seekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="1" />
+
+            <TextView
+                android:id="@+id/iou_TextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="IoU Threshold" />
+
+            <SeekBar
+                android:id="@+id/iou_seekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
                 android:id="@+id/oneLineLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
