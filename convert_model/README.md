@@ -10,7 +10,7 @@ For more information, please refer this article by the developer of `openvino2te
 git clone --recursive https://github.com/lp6m/yolov5s_android
 cd yolov5s_android
 docker build ./ -f ./docker/Dockerfile  -t yolov5s_android
-docker run -it --gpus all -v `pwd`:/workspace yolov5s_anrdoid bash
+docker run -it --gpus all -v `pwd`:/workspace yolov5s_android bash
 ```
 The following process is performed in docker container.  
 
