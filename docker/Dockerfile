@@ -45,3 +45,16 @@ RUN pip3 install onnx-simplifier
 RUN pip3 install tensorflow-datasets
 RUN pip3 install openvino2tensorflow==1.17.2
 RUN pip3 install gdown
+
+# Add a user that UID:GID will be updated by vscode
+ARG USERNAME=developer
+ARG GROUPNAME=developer
+ARG UID=1000
+ARG GID=1000
+ARG PASSWORD=developer
+RUN groupadd -g $GID $GROUPNAME && \
+    useradd -m -s /bin/bash -u $UID -g $GID -G sudo $USERNAME && \
+    echo $USERNAME:$PASSWORD | chpasswd && \
+    echo "$USERNAME   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER $USERNAME
+ENV HOME /home/developer
