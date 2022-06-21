@@ -65,7 +65,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
         x = x[xc[xi]]  # confidence
-        
+
         # If none remain process next image
         if not x.shape[0]:
             continue
@@ -179,8 +179,8 @@ class Colors:
 
 colors = Colors()
 
-def plot_and_save(bboxres, input_img, path):
-    names = open('./cococlass.txt').readlines()
+def plot_and_save(bboxres, input_img, path, class_txt_path="./cococlass.txt"):
+    names = open(class_txt_path).readlines()
     for i, det in enumerate(bboxres):  # detections per image
 
         gn = torch.tensor(input_img.shape)[[1, 0, 1, 0]]  # normalization gain whwh

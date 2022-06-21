@@ -9,7 +9,7 @@ from detector_head import Detect
 from PIL import Image
 
 class TfLiteRunner():
-    def __init__(self, model_path, INPUT_SIZE=640, conf_thres=0.25, iou_thres=0.45, quantize_mode=False, is_output_quantized=False):
+    def __init__(self, model_path, INPUT_SIZE=640, conf_thres=0.25, iou_thres=0.45, quantize_mode=False, is_output_quantized=False, class_num=80):
         self.INPUT_SIZE = INPUT_SIZE
         self.interpreter = tf.lite.Interpreter(model_path, num_threads=8)
         self.interpreter.allocate_tensors()
@@ -29,7 +29,7 @@ class TfLiteRunner():
         assert (None not in self.output_details), "model does not contain specified 'output_tensor_names'  "
 
         self.input_shape = self.input_details[0]['shape']
-        self.detector = Detect(nc=80, INPUT_SIZE=INPUT_SIZE)
+        self.detector = Detect(nc=class_num, INPUT_SIZE=INPUT_SIZE)
 
         self.conf_thres = conf_thres
         self.iou_thres = iou_thres
@@ -39,8 +39,8 @@ class TfLiteRunner():
     def __run_tflite(self, input_data):
         assert(isinstance(input_data, np.ndarray))
         assert(input_data.shape == (1, self.INPUT_SIZE, self.INPUT_SIZE, 3))
-        
-        input_dtype = np.uint8 if self.quantize_mode else np.float32 
+
+        input_dtype = np.uint8 if self.quantize_mode else np.float32
         self.interpreter.set_tensor(self.input_details[0]['index'], input_data.astype(input_dtype))
         self.interpreter.invoke()
 

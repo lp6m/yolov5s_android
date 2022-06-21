@@ -4,6 +4,7 @@ import numpy as np
 
 class Detect(nn.Module):
     def __init__(self, nc=80, INPUT_SIZE=640):
+        print(nc)
         super(Detect, self).__init__()
         self.nc = nc
         self.no = nc + 5
@@ -20,14 +21,14 @@ class Detect(nn.Module):
             torch.from_numpy(np.reshape(np.array(ag, dtype='float32'), (1, 3, 1, 1, 2)))
             for ag in anchorgrid
         ]
-    
+
     def forward(self, x):
         z = []
         for i in range(self.nl):
-            # bs, 20, 20, 255
+            # bs, 20, 20, 3*(class_num+5)
             bs, ny, nx, _ = x[i].shape
-            # bs, 20, 20, 3, 85 -> bs, 3, 20, 20, 85
-            x[i] = x[i].reshape(bs, ny, nx, 3, 85).permute(0, 3, 1, 2, 4).contiguous()
+            # bs, 20, 20, 3, class_num+5 -> bs, 3, 20, 20, class_num+5
+            x[i] = x[i].reshape(bs, ny, nx, 3, self.no).permute(0, 3, 1, 2, 4).contiguous()
             if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                 self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
@@ -36,7 +37,7 @@ class Detect(nn.Module):
             y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
             z.append(y.view(bs, -1, self.no))
         return torch.cat(z, 1)
-    
+
     @staticmethod
     def _make_grid(nx=20, ny=20):
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
