@@ -15,7 +15,7 @@ float revsigmoid(float f){
     return -1.0f * (float)log((1.0f / (f + eps)) - 1.0f);
 }
 
-#define CLASS_NUM 80
+#define CLASS_NUM 10
 #define max_wh 4096
 void detector(
         vector<bbox>* bbox_candidates,

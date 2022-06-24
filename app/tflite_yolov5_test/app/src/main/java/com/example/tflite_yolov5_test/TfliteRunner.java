@@ -37,15 +37,16 @@ public class TfliteRunner {
     private Interpreter tfliteInterpreter;
     Mode runmode;
     int inputSize;
+    final int CLASS_NUM = 10;
     class InferenceRawResult{
         public float[][][][] out1;
         public float[][][][] out2;
         public float[][][][] out3;
 
         public InferenceRawResult(int inputSize){
-            this.out1 = new float[1][inputSize/8][inputSize/8][3*85];
-            this.out2 = new float[1][inputSize/16][inputSize/16][3*85];
-            this.out3 = new float[1][inputSize/32][inputSize/32][3*85];
+            this.out1 = new float[1][inputSize/8][inputSize/8][3*(CLASS_NUM+5)];
+            this.out2 = new float[1][inputSize/16][inputSize/16][3*(CLASS_NUM+5)];
+            this.out3 = new float[1][inputSize/32][inputSize/32][3*(CLASS_NUM+5)];
         }
     }
     Object[] inputArray;
@@ -175,20 +176,13 @@ public class TfliteRunner {
         }
         return bboxes;
     }
-    static int[] coco80_to_91class_map = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
-            35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-            64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90};
-    static public int get_coco91_from_coco80(int idx){
-        //assume idx < 80
-        return coco80_to_91class_map[idx];
-    }
     public void setConfThresh(float thresh){ this.conf_thresh = thresh;}
     public void setIoUThresh(float thresh) {this.iou_thresh = thresh;}
 
     //port from TfLite Object Detection example
     /** An immutable result returned by a Detector describing what was recognized. */
     public class Recognition {
-        private final String[] coco_class_names = new String[]{"person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+        private final String[] class_names = new String[]{"car", "bus", "person", "bike", "truck", "motor", "train", "rider", "traffic sign", "traffic signal"};
         private final Integer class_idx;
         /**
          * A unique identifier for what has been recognized. Specific to the class, not the instance of
@@ -216,7 +210,7 @@ public class TfliteRunner {
             //this.id = (int)bbox_array[5];
             int class_id = (int)bbox_array[5];
             this.class_idx = class_id;
-            this.title = coco_class_names[class_id];
+            this.title = class_names[class_id];
             this.confidence = bbox_array[4];
             this.location = new RectF(x1, y1, x2, y2);
         }

@@ -161,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
             float w = x2 - x1;
             float h = y2 - y1;
             float conf = bbox.getConfidence();
-            int class_idx = TfliteRunner.get_coco91_from_coco80(bbox.getClass_idx());
+            int class_idx = bbox.getClass_idx();
             HashMap<String, Object> mapbox = new HashMap<>();
             mapbox.put("image_id", image_id);
             mapbox.put("bbox", new float[]{x, y, w, h});
