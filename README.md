@@ -5,7 +5,9 @@
 </div>
 
 The implementation of yolov5s on android for the [yolov5s export contest](https://github.com/ultralytics/yolov5/discussions/3213).    
-Download the latest android apk from [release](https://github.com/lp6m/yolov5s_android/releases) and install your device.
+Download the latest android apk from [release](https://github.com/lp6m/yolov5s_android/releases) and install your device.  
+
+**UPDATE:rocket: 2022/06/25** Added tutorial on how to integrate models trained with custom data. [Custom Model Intergration Tutorial](https://github.com/lp6m/yolov5s_android/issues/14)  
 
 ## Environment
 - Host Ubuntu18.04
@@ -20,7 +22,7 @@ Download the latest android apk from [release](https://github.com/lp6m/yolov5s_a
     * TfLite 2.4.0
 - Android Device
     * Xiaomi Mi11 (Storage 128GB/ RAM8GB)
-    * OS MUI 12.5.8  
+    * OS MIUI 12.5.8  
   
 We use docker container for host evaluation and model conversion.
 ```sh
