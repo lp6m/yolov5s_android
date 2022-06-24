@@ -1,22 +1,20 @@
 import argparse
 import sys
 import os
+import glob
+import cv2
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-def quantize_model(INPUT_SIZE, pb_path, output_path, calib_num, tfds_root, download_flag):
-    raw_test_data = tfds.load(name='coco/2017',
-                                    with_info=False,
-                                    split='validation',
-                                    data_dir=tfds_root,
-                                    download=download_flag)
+def quantize_model(INPUT_SIZE, pb_path, output_path, calib_num, image_dir):
     input_shapes = [(3, INPUT_SIZE, INPUT_SIZE)]
     def representative_dataset_gen():
-        for i, data in enumerate(raw_test_data.take(calib_num)):
+        files = list(glob.glob(image_dir + "/*.jpg"))
+        for i, imgpath in enumerate(files[:calib_num]):
             print('calibrating...', i)
-            image = data['image'].numpy()
+            image = cv2.imread(imgpath)
             images = []
             for shape in input_shapes:
                 data = tf.image.resize(image, (shape[1], shape[2]))
@@ -24,7 +22,7 @@ def quantize_model(INPUT_SIZE, pb_path, output_path, calib_num, tfds_root, downl
                 tmp_image = tmp_image[np.newaxis,:,:,:]
                 images.append(tmp_image)
             yield images
-    
+
     input_arrays = ['inputs']
     output_arrays = ['Identity', 'Identity_1', 'Identity_2']
     converter = tf.compat.v1.lite.TFLiteConverter.from_frozen_graph(pb_path, input_arrays, output_arrays)
@@ -48,9 +46,8 @@ if __name__ == '__main__':
     parser.add_argument('--pb_path', default="/workspace/yolov5/tflite/model_float32.pb")
     parser.add_argument('--output_path', default='/workspace/yolov5/tflite/model_quantized.tflite')
     parser.add_argument('--calib_num', type=int, default=100, help='number of images for calibration.')
-    parser.add_argument('--tfds_root', default='/workspace/TFDS/')
-    parser.add_argument('--download_tfds', action='store_true', help='download tfds. it takes a lot of time.')
+    parser.add_argument('--image_dir', type=str, default="/workspace/dataset/bdd100k/images/100k/val/")
     args = parser.parse_args()
-    quantize_model(args.input_size, args.pb_path, args.output_path, args.calib_num, args.tfds_root, args.download_tfds)
+    quantize_model(args.input_size, args.pb_path, args.output_path, args.calib_num, args.image_dir)
 
 
