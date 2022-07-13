@@ -35,7 +35,7 @@ void detector(
                 jobjectArray ptr_d2 = (jobjectArray)env->GetObjectArrayElement(ptr_d1 ,gx);
                 auto elmptr = env->GetFloatArrayElements((jfloatArray)ptr_d2 , nullptr);
                 for(int ch = 0; ch < 3; ch++){
-                    int offset = 85 * ch;
+                    int offset = (CLASS_NUM + 5) * ch;
                     auto elmptr_ch = elmptr + offset;
                     //don't apply sigmoid to all bbox candidates for efficiency
                     float obj_conf_unsigmoid = elmptr_ch[4];
